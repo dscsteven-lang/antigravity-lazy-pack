@@ -234,7 +234,7 @@ $UriSegments = $ProjectDir.Replace('\', '/').Split('/')
 $EscapedSegments = @()
 foreach ($seg in $UriSegments) {
     if ($seg -like "*:") {
-        $EscapedSegments += $seg.Replace(":", "%3A")
+        $EscapedSegments += $seg.ToLower().Replace(":", "%3A")
     } else {
         $EscapedSegments += [System.Uri]::EscapeDataString($seg)
     }
