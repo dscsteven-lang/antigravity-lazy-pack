@@ -71,6 +71,89 @@ if (Get-Command nlm -ErrorAction SilentlyContinue) {
     }
 }
 
+# 輔助函數：在互動式終端機中進行確認詢問
+function Confirm-Action ($Prompt) {
+    # 判斷是否為互動式環境且輸入未被重新導向，防止在 AI 背景執行時卡死
+    if ([Environment]::UserInteractive -and -not [Console]::IsInputRedirected) {
+        $ans = Read-Host "$Prompt"
+        return ($ans -eq 'Y' -or $ans -eq 'y' -or $ans -eq 'yes' -or $ans -eq '')
+    }
+    return $false
+}
+
+# --- 互動式一鍵自動安裝與登入流程 ---
+
+# 1. Git 自動安裝
+if (-not $GitInstalled) {
+    if (Confirm-Action "⚠️ 偵測到本機未安裝 Git。是否要立即透過 winget 自動安裝 Git？ [Y/n]") {
+        Write-Host "正在下載並安裝 Git，請在隨後彈出的 Windows 視窗中允許變更..." -ForegroundColor Yellow
+        $proc = Start-Process winget -ArgumentList "install --id Git.Git --accept-source-agreements --accept-package-agreements" -Wait -PassThru
+        if (Get-Command git -ErrorAction SilentlyContinue) {
+            $GitInstalled = $true
+            $GitVersion = (git --version).Trim()
+            Write-Host "Git 安裝成功！" -ForegroundColor Green
+        } else {
+            Write-Warning "Git 安裝失敗，或需要重新開啟終端機以套用環境變數。"
+        }
+    }
+}
+
+# 2. GitHub CLI 自動安裝與登入
+if (-not $GhInstalled) {
+    if (Confirm-Action "⚠️ 偵測到本機未安裝 GitHub CLI (gh)。是否要立即透過 winget 自動安裝？ [Y/n]") {
+        Write-Host "正在下載並安裝 GitHub CLI..." -ForegroundColor Yellow
+        $proc = Start-Process winget -ArgumentList "install --id GitHub.cli --accept-source-agreements --accept-package-agreements" -Wait -PassThru
+        if (Get-Command gh -ErrorAction SilentlyContinue) {
+            $GhInstalled = $true
+            Write-Host "GitHub CLI 安裝成功！" -ForegroundColor Green
+        }
+    }
+}
+
+if ($GhInstalled -and -not $GhLoggedIn) {
+    if (Confirm-Action "🔑 偵測到 GitHub CLI 尚未登入。是否要立即啟動瀏覽器完成登入授權？ [Y/n]") {
+        Write-Host "正在啟動 GitHub 授權登入..." -ForegroundColor Yellow
+        gh auth login --web --git-protocol https
+        # 重新偵測登入狀態
+        $ghAuth = gh auth status 2>&1 | Out-String
+        if ($ghAuth -match "Logged in to") {
+            $GhLoggedIn = $true
+            if ($ghAuth -match "as ([^\s]+)") { $GhUser = $Matches[1] }
+            Write-Host "GitHub CLI 登入成功！(帳號: $GhUser)" -ForegroundColor Green
+        }
+    }
+}
+
+# 3. NotebookLM MCP CLI 自動安裝與登入
+if (-not $NlmInstalled) {
+    if (Confirm-Action "⚠️ 偵測到本機未安裝 NotebookLM MCP (nlm)。是否要立即透過 npm 全域安裝？ [Y/n]") {
+        if (Get-Command npm -ErrorAction SilentlyContinue) {
+            Write-Host "正在透過 npm 安裝 notebooklm-mcp-cli..." -ForegroundColor Yellow
+            npm install -g notebooklm-mcp-cli
+            if (Get-Command nlm -ErrorAction SilentlyContinue) {
+                $NlmInstalled = $true
+                $NlmStatus = "未登入"
+                Write-Host "NotebookLM MCP CLI 安裝成功！" -ForegroundColor Green
+            }
+        } else {
+            Write-Warning "未在本機找到 npm 指令。請先安裝 Node.js 以便使用 npm 安裝 nlm。"
+        }
+    }
+}
+
+if ($NlmInstalled -and $NlmStatus -ne "正常運作") {
+    if (Confirm-Action "🔑 偵測到 NotebookLM MCP 尚未登入或狀態異常。是否要立即啟動登入驗證？ [Y/n]") {
+        Write-Host "正在啟動 nlm login，請在瀏覽器彈出時完成登入驗證..." -ForegroundColor Yellow
+        nlm login
+        # 重新檢測連線狀態
+        $nlmDoc = nlm doctor 2>&1 | Out-String
+        if ($nlmDoc -match "successful" -or $nlmDoc -match "OK") {
+            $NlmStatus = "正常運作"
+            Write-Host "NotebookLM MCP 登入成功！" -ForegroundColor Green
+        }
+    }
+}
+
 # 自動決定程式碼子目錄名稱
 $RepoSubDirName = ""
 if (-not [string]::IsNullOrEmpty($GithubRepoUrl)) {
