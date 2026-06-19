@@ -42,7 +42,6 @@ if ($RegisterSelf) {
     if (-not (Test-Path $ConfigProjectsDir)) {
         New-Item -ItemType Directory -Path $ConfigProjectsDir -Force | Out-Null
     }
-    $SelfId = [guid]::NewGuid().ToString()
 
     $UriSegments = $SelfDir.Replace('\', '/').Split('/')
     $EscapedSegments = @()
@@ -54,6 +53,30 @@ if ($RegisterSelf) {
         }
     }
     $SelfUri = "file:///" + ($EscapedSegments -join "/")
+
+    # 檢查是否已存在相同 folderUri 的專案，避免重複註冊
+    $SelfId = ""
+    if (Test-Path $ConfigProjectsDir) {
+        $files = Get-ChildItem -Path $ConfigProjectsDir -Filter "*.json"
+        foreach ($file in $files) {
+            try {
+                $jsonContent = Get-Content -Path $file.FullName -Raw -Encoding utf8
+                $projData = $jsonContent | ConvertFrom-Json
+                if ($null -ne $projData.projectResources.resources) {
+                    foreach ($res in $projData.projectResources.resources) {
+                        if ($res.gitFolder.folderUri -eq $SelfUri) {
+                            $SelfId = $projData.id
+                            break
+                        }
+                    }
+                }
+            } catch {}
+            if (-not [string]::IsNullOrEmpty($SelfId)) { break }
+        }
+    }
+    if ([string]::IsNullOrEmpty($SelfId)) {
+        $SelfId = [guid]::NewGuid().ToString()
+    }
 
     $SelfJson = @"
 {
@@ -110,6 +133,8 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 # 0. 本機環境與元件診斷
+$RequiresGit = (-not [string]::IsNullOrEmpty($GithubRepoUrl)) -or $CreateGithubRepo -or $EnableGitHubCLI
+
 $GitInstalled = $false
 $GitVersion = "未安裝"
 if (Get-Command git -ErrorAction SilentlyContinue) {
@@ -155,9 +180,9 @@ function Confirm-Action ($Prompt) {
 
 # --- 互動式一鍵自動安裝與登入流程 ---
 
-# 1. Git 自動安裝
-if (-not $GitInstalled) {
-    if (Confirm-Action "⚠️ 偵測到本機未安裝 Git。是否要立即透過 winget 自動安裝 Git？ [Y/n]") {
+# 1. Git 自動安裝 (僅在需要 Git/GitHub 功能時才提示安裝)
+if (-not $GitInstalled -and $RequiresGit) {
+    if (Confirm-Action "⚠️ 偵測到本機未安裝 Git，但您的專案需要連線 GitHub。是否要立即透過 winget 自動安裝 Git？ [Y/n]") {
         Write-Host "正在下載並安裝 Git，請在隨後彈出的 Windows 視窗中允許變更..." -ForegroundColor Yellow
         $proc = Start-Process winget -ArgumentList "install --id Git.Git --accept-source-agreements --accept-package-agreements" -Wait -PassThru
         if (Get-Command git -ErrorAction SilentlyContinue) {
@@ -519,9 +544,6 @@ if (-not (Test-Path $ConfigProjectsDir)) {
     New-Item -ItemType Directory -Path $ConfigProjectsDir -Force | Out-Null
 }
 
-# 產生 UUID
-$ProjectId = [guid]::NewGuid().ToString()
-
 # 計算外層工作區路徑的 URL 百分比編碼 folderUri (強制磁碟代號為小寫)
 $UriSegments = $ProjectDir.Replace('\', '/').Split('/')
 $EscapedSegments = @()
@@ -533,6 +555,30 @@ foreach ($seg in $UriSegments) {
     }
 }
 $FolderUri = "file:///" + ($EscapedSegments -join "/")
+
+# 檢查是否已存在相同 folderUri 的專案，以沿用舊有 UUID，防止重複註冊
+$ProjectId = ""
+if (Test-Path $ConfigProjectsDir) {
+    $files = Get-ChildItem -Path $ConfigProjectsDir -Filter "*.json"
+    foreach ($file in $files) {
+        try {
+            $jsonContent = Get-Content -Path $file.FullName -Raw -Encoding utf8
+            $projData = $jsonContent | ConvertFrom-Json
+            if ($null -ne $projData.projectResources.resources) {
+                foreach ($res in $projData.projectResources.resources) {
+                    if ($res.gitFolder.folderUri -eq $FolderUri) {
+                        $ProjectId = $projData.id
+                        break
+                    }
+                }
+            }
+        } catch {}
+        if (-not [string]::IsNullOrEmpty($ProjectId)) { break }
+    }
+}
+if ([string]::IsNullOrEmpty($ProjectId)) {
+    $ProjectId = [guid]::NewGuid().ToString()
+}
 
 $ProjectJson = @"
 {
@@ -561,18 +607,89 @@ $JsonFilePath = Join-Path $ConfigProjectsDir "$ProjectId.json"
 [System.IO.File]::WriteAllText($JsonFilePath, $ProjectJson)
 Write-Host "成功將專案註冊至 AntiGravity 清單！設定檔: $JsonFilePath" -ForegroundColor Green
 
+# 8.7 順便將本腳本所在目錄以「專案初始化助手」註冊至專案清單（防重）
+$SelfRegisteredId = ""
+if (Test-Path $ConfigProjectsDir) {
+    $files = Get-ChildItem -Path $ConfigProjectsDir -Filter "*.json"
+    foreach ($file in $files) {
+        try {
+            $jsonContent = Get-Content -Path $file.FullName -Raw -Encoding utf8
+            $projData = $jsonContent | ConvertFrom-Json
+            if ($null -ne $projData.projectResources.resources) {
+                foreach ($res in $projData.projectResources.resources) {
+                    $escapedSelfDir = $SelfDir.Replace('\', '/')
+                    if ($res.gitFolder.folderUri -match [Regex]::Escape($escapedSelfDir)) {
+                        $SelfRegisteredId = $projData.id
+                        break
+                    }
+                }
+            }
+        } catch {}
+        if (-not [string]::IsNullOrEmpty($SelfRegisteredId)) { break }
+    }
+}
+
+if ([string]::IsNullOrEmpty($SelfRegisteredId)) {
+    $SelfId = [guid]::NewGuid().ToString()
+    $SelfDir = $PSScriptRoot
+    if ([string]::IsNullOrEmpty($SelfDir)) { $SelfDir = Get-Location }
+    $SelfDir = [System.IO.Path]::GetFullPath($SelfDir)
+    $SelfName = "專案初始化助手"
+
+    $UriSegments = $SelfDir.Replace('\', '/').Split('/')
+    $EscapedSegments = @()
+    foreach ($seg in $UriSegments) {
+        if ($seg -like "*:") {
+            $EscapedSegments += $seg.ToLower().Replace(":", "%3A")
+        } else {
+            $EscapedSegments += [System.Uri]::EscapeDataString($seg)
+        }
+    }
+    $SelfUri = "file:///" + ($EscapedSegments -join "/")
+
+    $SelfJson = @"
+{
+  "id":  "$SelfId",
+  "name":  "$SelfName",
+  "projectResources":  {
+    "resources":  [
+      {
+        "gitFolder":  {
+          "folderUri":  "$SelfUri",
+          "defaultBranch":  "main"
+        }
+      }
+    ]
+  },
+  "settings":  {
+    "fileAccessPolicy":  "AGENT_SETTING_POLICY_ALLOW",
+    "internetPolicy":  "AGENT_SETTING_POLICY_ASK",
+    "autoExecutionPolicy":  "CASCADE_COMMANDS_AUTO_EXECUTION_EAGER",
+    "artifactReviewMode":  "ARTIFACT_REVIEW_MODE_ALWAYS"
+  }
+}
+"@
+    $SelfJsonPath = Join-Path $ConfigProjectsDir "$SelfId.json"
+    [System.IO.File]::WriteAllText($SelfJsonPath, $SelfJson)
+    Write-Host "已自動將本初始化工具「專案初始化助手」註冊至專案清單中。" -ForegroundColor Gray
+}
+
 # 8.5 輸出開發環境與相容性診斷報告
 Write-Host ""
 Write-Host "======================================================================" -ForegroundColor Cyan
 Write-Host "             🛠️  本機開發環境與相容性診斷報告" -ForegroundColor Cyan
 Write-Host "======================================================================" -ForegroundColor Cyan
 
-# Git 檢查
+# Git 檢查 (若未安裝，且專案需要 Git 功能才顯示紅色錯誤；否則顯示灰色提示)
 if ($GitInstalled) {
     Write-Host " [v] Git 版本控制   : 已安裝 ($GitVersion)" -ForegroundColor Green
 } else {
-    Write-Host " [x] Git 版本控制   : 未安裝！此機台將無法使用任何版本控制與自動分支機制。" -ForegroundColor Red
-    Write-Host "     👉 建議安裝指令：winget install --id Git.Git" -ForegroundColor Gray
+    if ($RequiresGit) {
+        Write-Host " [x] Git 版本控制   : 未安裝！此機台將無法使用您指定的 GitHub 連線與自動分支機制。" -ForegroundColor Red
+        Write-Host "     👉 建議安裝指令：winget install --id Git.Git" -ForegroundColor Gray
+    } else {
+        Write-Host " [ ] Git 版本控制   : 未安裝 (本專案未使用，無須安裝)" -ForegroundColor Gray
+    }
 }
 
 # GitHub CLI 檢查
