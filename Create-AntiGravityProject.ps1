@@ -14,6 +14,8 @@ param (
 
     [switch]$EnableGitHubCLI,
 
+    [switch]$CreateGithubRepo,
+
     [switch]$EnableDrawGuideline,
 
     [string]$TargetParentDir = "G:/我的雲端硬碟/AntiGravity2/"
@@ -32,6 +34,7 @@ Write-Host "預設父路徑: $TargetParentDir"
 Write-Host "專案個性化: $Personality"
 Write-Host "NotebookLM MCP 連接: $(if ($EnableNotebookLM) { '是' } else { '否' })"
 Write-Host "GitHub CLI 連接: $(if ($EnableGitHubCLI) { '是' } else { '否' })"
+Write-Host "GitHub 遠端儲存庫建立: $(if ($CreateGithubRepo) { '是' } else { '否' })"
 Write-Host "生圖指引與 UI 規範: $(if ($EnableDrawGuideline) { '是' } else { '否' })"
 Write-Host "------------------------------------------"
 
@@ -63,7 +66,9 @@ foreach ($dir in $DirsToCreate) {
 
 # 3. 初始化 Git 儲存庫
 Write-Host "正在初始化 Git 儲存庫..." -ForegroundColor Yellow
+$HasGit = $false
 if (Get-Command git -ErrorAction SilentlyContinue) {
+    $HasGit = $true
     if (-not (Test-Path (Join-Path $ProjectDir ".git"))) {
         Push-Location $ProjectDir
         git init | Out-Null
@@ -160,9 +165,88 @@ if ($EnableNotebookLM) {
     }
 }
 
-# 6. 成功輸出
+# 6. 自動化在 GitHub 上建立遠端儲存庫
+if ($CreateGithubRepo -and $HasGit) {
+    Write-Host "正在嘗試在 GitHub 上建立新的同名儲存庫..." -ForegroundColor Yellow
+    if (Get-Command gh -ErrorAction SilentlyContinue) {
+        # 先進行一個 initial commit 以便 push
+        Push-Location $ProjectDir
+        git add . | Out-Null
+        git commit -m "Initial commit: $ProjectName project initialized by AntiGravity Lazy Pack" | Out-Null
+        git branch -M main | Out-Null
+        
+        # 執行遠端建立並自動 push
+        # gh repo create <name> --public --source=. --remote=origin --push
+        $ghResult = gh repo create $FolderName --public --source=. --remote=origin --push 2>&1
+        Pop-Location
+        
+        if ($ghResult -match "https://github.com") {
+            Write-Host "GitHub 儲存庫建立並推送成功！" -ForegroundColor Green
+            Write-Host "連結: https://github.com/dscsteven-lang/$FolderName" -ForegroundColor Green
+        } else {
+            Write-Warning "自動建立 GitHub 儲存庫失敗。可能因為未登入或已存在同名倉庫。詳細輸出："
+            Write-Host $ghResult -ForegroundColor Red
+        }
+    } else {
+        Write-Warning "未在本機找到 GitHub CLI (gh) 指令，無法自動建立儲存庫。"
+        Write-Host "請手動在 GitHub 上建立 $FolderName 儲存庫，並在專案目錄執行：" -ForegroundColor Gray
+        Write-Host "  git remote add origin https://github.com/<您的帳號>/$FolderName.git" -ForegroundColor Gray
+        Write-Host "  git push -u origin main" -ForegroundColor Gray
+    }
+}
+
+# 7. 自動向 AntiGravity 2.0 註冊此專案 (寫入專案設定 JSON 檔)
+Write-Host "正在將專案註冊至 AntiGravity 2.0 專案清單..." -ForegroundColor Yellow
+$ConfigProjectsDir = Join-Path $env:USERPROFILE ".gemini/config/projects"
+if (-not (Test-Path $ConfigProjectsDir)) {
+    New-Item -ItemType Directory -Path $ConfigProjectsDir -Force | Out-Null
+}
+
+# 產生 UUID
+$ProjectId = [guid]::NewGuid().ToString()
+
+# 計算 URL 百分比編碼的 folderUri
+$UriSegments = $ProjectDir.Replace('\', '/').Split('/')
+$EscapedSegments = @()
+foreach ($seg in $UriSegments) {
+    if ($seg -like "*:") {
+        $EscapedSegments += $seg.Replace(":", "%3A")
+    } else {
+        $EscapedSegments += [System.Uri]::EscapeDataString($seg)
+    }
+}
+$FolderUri = "file:///" + ($EscapedSegments -join "/")
+
+$ProjectJson = @"
+{
+  "id":  "$ProjectId",
+  "name":  "$ProjectName",
+  "projectResources":  {
+    "resources":  [
+      {
+        "gitFolder":  {
+          "folderUri":  "$FolderUri",
+          "defaultBranch":  "main"
+        }
+      }
+    ]
+  },
+  "settings":  {
+    "fileAccessPolicy":  "AGENT_SETTING_POLICY_ALLOW",
+    "internetPolicy":  "AGENT_SETTING_POLICY_ASK",
+    "autoExecutionPolicy":  "CASCADE_COMMANDS_AUTO_EXECUTION_EAGER",
+    "artifactReviewMode":  "ARTIFACT_REVIEW_MODE_ALWAYS"
+  }
+}
+"@
+
+$JsonFilePath = Join-Path $ConfigProjectsDir "$ProjectId.json"
+[System.IO.File]::WriteAllText($JsonFilePath, $ProjectJson, [System.Text.Encoding]::UTF8)
+Write-Host "成功將專案註冊至 AntiGravity 清單！設定檔: $JsonFilePath" -ForegroundColor Green
+
+# 8. 成功輸出
 Write-Host "==========================================" -ForegroundColor Green
-Write-Host "  AntiGravity 2.0 專案初始化完成！" -ForegroundColor Green
+Write-Host "  AntiGravity 2.0 專案初始化與清單註冊完成！" -ForegroundColor Green
 Write-Host "==========================================" -ForegroundColor Green
 Write-Host "專案路徑: $ProjectDir" -ForegroundColor Green
-Write-Host "現在您可以在 AntiGravity 2.0 中開啟此專案資料夾作為工作區並輸入「開工」開始工作！`n"
+Write-Host "現在您可以在 AntiGravity 2.0 專案清單中直接看到「$ProjectName」！`n"

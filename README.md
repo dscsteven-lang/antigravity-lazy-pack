@@ -70,6 +70,7 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
   -Personality "扮演一位專業的 React 前端工程師，回答力求簡潔並給出最佳實踐。" `
   -EnableNotebookLM `
   -EnableGitHubCLI `
+  -CreateGithubRepo `
   -EnableDrawGuideline
 ```
 
@@ -79,6 +80,7 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 - `-Personality` (選用)：指定此專案 AI 的獨特個性。
 - `-EnableNotebookLM` (選用開關)：若加入此參數，代表啟用 NotebookLM MCP。
 - `-EnableGitHubCLI` (選用開關)：若加入此參數，代表啟用 GitHub CLI。
+- `-CreateGithubRepo` (選用開關)：若加入此參數，且本機有登入 `gh`，會自動在 GitHub 上建立同名公開儲存庫並 Push。
 - `-EnableDrawGuideline` (選用開關)：若加入此參數，代表啟用生圖與 UI 設計指引規範。
 - `-TargetParentDir` (選用)：預設為 `G:\我的雲端硬碟\AntiGravity2/`，可手動指定其他父目錄。
 
