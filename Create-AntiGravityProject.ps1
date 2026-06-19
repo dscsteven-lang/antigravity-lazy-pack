@@ -30,31 +30,14 @@ if ([string]::IsNullOrEmpty($Personality)) {
     $Personality = "未設定特別個性化，請由 AI 自由發揮並依據開發歷程學習調整。"
 }
 if ([string]::IsNullOrEmpty($TargetParentDir)) {
-    # 智慧偵測適合的專案父路徑，相容不同電腦與掛載路徑
-    $DetectedDir = ""
-    
-    # 1. 偵測常見的 Google Drive 掛載點與名稱組合
-    $Drives = @("G", "H", "I", "J", "F")
-    $FolderNames = @("我的雲端硬碟", "My Drive")
-    
-    foreach ($drive in $Drives) {
-        foreach ($folder in $FolderNames) {
-            $testPath = "$drive`:/$folder/AntiGravity2/"
-            if (Test-Path "$drive`:/$folder") {
-                $DetectedDir = $testPath
-                break
-            }
-        }
-        if (-not [string]::IsNullOrEmpty($DetectedDir)) { break }
+    # 動態以腳本所在位置（懶人包資料夾）的上層目錄作為預設的 TargetParentDir
+    $ScriptDir = $PSScriptRoot
+    if ([string]::IsNullOrEmpty($ScriptDir)) {
+        $ScriptDir = Get-Location
     }
-    
-    # 2. 若未安裝 Google Drive，則退回至本機使用者目錄下的 AntiGravity2 資料夾
-    if ([string]::IsNullOrEmpty($DetectedDir)) {
-        $UserDir = [System.Environment]::GetFolderPath("UserProfile").Replace('\', '/')
-        $DetectedDir = "$UserDir/AntiGravity2/"
-    }
-    
-    $TargetParentDir = $DetectedDir
+    # 取得上層目錄路徑，將反斜線統一換為正斜線，並確保結尾有斜線
+    $ParentDir = Split-Path $ScriptDir -Parent
+    $TargetParentDir = ($ParentDir.Replace('\', '/')) + "/"
 }
 
 # 設定 PowerShell 輸出為 UTF-8

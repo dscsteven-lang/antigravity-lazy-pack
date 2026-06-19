@@ -9,36 +9,38 @@ description: AntiGravity 2.0 新專案初始化懶人包。當使用者說「建
 
 ## 執行流程
 
-### 步驟一：向使用者收集與確認專案設定
+### 步驟一：向使用者收集專案名稱與確認路徑
 請以親切、專業的繁體中文，向使用者詢問以下資訊：
-1. **專案名稱** (例如：專案儀表板、個人學習助理)
-2. **資料夾名稱** (預設會自動偵測建立於本機 Google Drive 的 AntiGravity2 目錄中；若本機未安裝 Google Drive，則會自動安全退回建立至本機使用者目錄下，例如 `C:\Users\您的帳號\AntiGravity2\<資料夾名稱>\`，或由您手動指定其他路徑。)
-3. **專案個性化設定** (例如：希望 Agent 扮演專家級全端工程師、熱情的程式導師，或極簡明快的工作助理？)
-4. **是否連線 NotebookLM MCP** (是/否)
-5. **是否啟用生圖指引與 UI 設計規範** (是/否)
-6. **GitHub 與遠端 Git 設定** (請選擇：1. 自動新建 GitHub 儲存庫；2. 關聯現有的 GitHub 儲存庫 URL（需提供網址）；3. 不需要)
-   *(💡 提示：若為 **私有儲存庫**，請確認此電腦已登入 GitHub CLI `gh auth login` 或曾手動 clone 成功以儲存憑證。因 AI 背景執行為非互動式，無法彈出登入視窗。)*
+1. **專案名稱** (例如：專案儀表板、個人學習助理。資料夾名稱將自動與專案名稱保持一致)。
+2. **確認建立路徑**：
+   * AI 請先找出**「當前工作目錄的上層目錄」**作為預設的專案父目錄。例如，若目前本對話位於 `D:\AntiGravity2\懶人包`，則上層目錄預設為 `D:\AntiGravity2\`。
+   * 向使用者展示預設的專案路徑：`[上層目錄預設]\<專案名稱>`，並詢問：「請問是否在此路徑建立專案？如果您想要修改，請提供自訂路徑，直接按 Enter 鍵代表同意使用預設路徑。」
 
-### 步驟二：列出預設規則並詢問是否增刪
-向使用者展示預設套用於新專案 `.agents/AGENTS.md` 的核心規則：
-- **語言偏好**：思考 (Thought) 與對話一律使用繁體中文。
-- **開工流程**：載入歷史記憶與規則。
-- **收工流程**：自動將對話歷史 `transcript.jsonl` 備份至 `記憶/對話歷史記憶/` 下。
-- **Git 提交詢問**：分析變更並產生建議 Commit Message，由使用者決定是否提交。
-- **生圖指引** (若啟用)：UI 設計配色與 Git 安全隔離。
+💡 **同時告知預設選項**：
+向使用者說明，為了加速專案建立，以下設定將**直接採用預設值**：
+* **連線 NotebookLM MCP**：預設為 **是** (連線)。
+* **啟用生圖指引與 UI 設計規範**：預設為 **是** (啟用)。
+* **GitHub 與遠端 Git**：預設為 **不需要** (若需自動建立 GitHub 儲存庫或關聯現有庫，請主動提出即可)。
+* **專案個性化設定**：預設為「未設定特別個性化，請由 AI 自由發揮並依據開發歷程學習調整。」
+* *（註：若您需要對上述預設選項進行修改，或者想新增任何專屬的規則，請在回答專案名稱時一併告訴我！）*
 
-**詢問使用者**：「這是目前預設的規則。請問您想對這些規則進行修改，或者想新增任何專案的專屬規則嗎？」並收集其需求。
+### 步驟二：確認核心規則
+向使用者告知 `.agents/AGENTS.md` 將內建的預設核心規則：
+- 思考與對話一律使用繁體中文。
+- 開工時自動讀取 `記憶/` 中的最新歷史備份與規則以還原脈絡。
+- 收工時自動備份對話紀錄與自訂規則至 `記憶/` 下。
+- 本地「記憶」與「規則」安全隔離於 Git 外部，不進版控、不上傳。
 
 ### 步驟三：執行專案建立指令
-收集齊全資訊後，在系統終端機中透過 `run_command` 執行此 PowerShell 腳本。
+收集到專案名稱與確認路徑後，在系統終端機中透過 `run_command` 執行此 PowerShell 腳本。
 
 執行指令格式範例：
 ```powershell
-# 範例 1：自動新建 GitHub 儲存庫 (會啟用 GitHub CLI)
-powershell -ExecutionPolicy Bypass -File "g:\我的雲端硬碟\AntiGravity2\懶人包\Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "資料夾名稱" -Personality "個性化描述" -EnableNotebookLM -EnableGitHubCLI -CreateGithubRepo -EnableDrawGuideline
+# 範例 1：採用預設值建立 (不連線 Git 遠端)
+powershell -ExecutionPolicy Bypass -File "[懶人包目錄]/Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "專案名稱" -EnableNotebookLM -EnableDrawGuideline -TargetParentDir "[上層目錄路徑]/"
 
-# 範例 2：關聯現有的 GitHub 儲存庫
-powershell -ExecutionPolicy Bypass -File "g:\我的雲端硬碟\AntiGravity2\懶人包\Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "資料夾名稱" -Personality "個性化描述" -EnableNotebookLM -GithubRepoUrl "https://github.com/您的帳號/專案儲存庫.git" -EnableDrawGuideline
+# 範例 2：連線現有的 GitHub 儲存庫 (使用者有要求時)
+powershell -ExecutionPolicy Bypass -File "[懶人包目錄]/Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "專案名稱" -EnableNotebookLM -EnableDrawGuideline -GithubRepoUrl "https://github.com/dscsteven-lang/equip-maint-ai.git" -TargetParentDir "[上層目錄路徑]/"
 ```
 
 ### 步驟四：成果回報與重啟提醒
