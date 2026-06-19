@@ -1,6 +1,6 @@
 ---
 name: antigravity-project-initializer
-description: AntiGravity 2.0 新專案初始化懶人包。當使用者說「建立新專案」、「初始化專案」、「建立 AntiGravity 專案」時載入此技能。
+description: AntiGravity 2.0 新專案自動初始化工具。當使用者說「建立新專案」、「初始化專案」、「建立 AntiGravity 專案」時載入此技能。
 ---
 
 # AntiGravity 2.0 新專案自動初始化技能
@@ -13,7 +13,7 @@ description: AntiGravity 2.0 新專案初始化懶人包。當使用者說「建
 請以親切、專業的繁體中文，向使用者詢問以下資訊：
 1. **專案名稱** (例如：專案儀表板、個人學習助理。資料夾名稱將自動與專案名稱保持一致)。
 2. **確認建立路徑**：
-   * AI 請先找出**「當前工作目錄的上層目錄」**作為預設的專案父目錄。例如，若目前本對話位於 `D:\AntiGravity2\懶人包`，則上層目錄預設為 `D:\AntiGravity2\`。
+   * AI 請先找出**「當前工作目錄的上層目錄」**作為預設的專案父目錄。例如，若目前本對話位於 `D:\AntiGravity2\專案初始化助手`，則上層目錄預設為 `D:\AntiGravity2\`。
    * 向使用者展示預設的專案路徑：`[上層目錄預設]\<專案名稱>`，並詢問：「請問是否在此路徑建立專案？如果您想要修改，請提供自訂路徑，直接按 Enter 鍵代表同意使用預設路徑。」
 
 💡 **同時告知預設選項**：
@@ -38,10 +38,10 @@ description: AntiGravity 2.0 新專案初始化懶人包。當使用者說「建
 執行指令格式範例：
 ```powershell
 # 範例 1：採用預設值建立 (不連線 Git 遠端)
-powershell -ExecutionPolicy Bypass -File "[懶人包目錄]/Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "專案名稱" -EnableNotebookLM -EnableDrawGuideline -TargetParentDir "[上層目錄路徑]/"
+powershell -ExecutionPolicy Bypass -File "[專案初始化助手目錄]/Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "專案名稱" -EnableNotebookLM -EnableDrawGuideline -TargetParentDir "[上層目錄路徑]/"
 
 # 範例 2：連線現有的 GitHub 儲存庫 (使用者有要求時)
-powershell -ExecutionPolicy Bypass -File "[懶人包目錄]/Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "專案名稱" -EnableNotebookLM -EnableDrawGuideline -GithubRepoUrl "https://github.com/dscsteven-lang/equip-maint-ai.git" -TargetParentDir "[上層目錄路徑]/"
+powershell -ExecutionPolicy Bypass -File "[專案初始化助手目錄]/Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "專案名稱" -EnableNotebookLM -EnableDrawGuideline -GithubRepoUrl "https://github.com/dscsteven-lang/equip-maint-ai.git" -TargetParentDir "[上層目錄路徑]/"
 ```
 
 ### 步驟四：成果回報與重啟提醒

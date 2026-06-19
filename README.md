@@ -1,8 +1,8 @@
-# AntiGravity 2.0 新專案建立懶人包
+# AntiGravity 2.0 新專案建立專案初始化助手
 
-本懶人包旨在協助使用者在 **AntiGravity 2.0**（或相容之 AI Agent）環境下，快速建立與初始化全新的開發專案。
+本專案初始化助手旨在協助使用者在 **AntiGravity 2.0**（或相容之 AI Agent）環境下，快速建立與初始化全新的開發專案。
 
-透過此懶人包，您可以快速建立符合統一規範的專案結構，包含自動化的**繁體中文偏好設定**、**開工/收工備份機制**、以及 **NotebookLM MCP / GitHub CLI 連接狀態整合**。
+透過此專案初始化助手，您可以快速建立符合統一規範的專案結構，包含自動化的**繁體中文偏好設定**、**開工/收工備份機制**、以及 **NotebookLM MCP / GitHub CLI 連接狀態整合**。
 
 ---
 
@@ -39,21 +39,21 @@
 
 ## 🚀 使用方式
 
-### 📌 第一次使用：將「懶人包」註冊至專案清單
-為了讓您未來能夠直接在專案清單中點擊「懶人包」進行對話建立新專案（無需每次都複製貼上 GitHub 網址），請在 clone 本倉庫後，於本目錄下開啟 PowerShell 執行以下指令進行**一鍵自我註冊**：
+### 📌 第一次使用：將「專案初始化助手」註冊至專案清單
+為了讓您未來能夠直接在專案清單中點擊「專案初始化助手」進行對話建立新專案（無需每次都複製貼上 GitHub 網址），請在 clone 本倉庫後，於本目錄下開啟 PowerShell 執行以下指令進行**一鍵自我註冊**：
 
 ```powershell
 # 解除執行限制並執行自註冊
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 .\Create-AntiGravityProject.ps1 -RegisterSelf
 ```
-執行後，重新整理 AntiGravity 的專案清單，您將會看到 **「懶人包」** 專案！
+執行後，重新整理 AntiGravity 的專案清單，您將會看到 **「專案初始化助手」** 專案！
 
 ---
 
-### 方式一：直接在「懶人包」專案對話中建立（最推薦）
+### 方式一：直接在「專案初始化助手」專案對話中建立（最推薦）
 
-當您完成上述自註冊後，您可以直接進入專案清單中的 **「懶人包」** 專案，並開啟新對話。此時您不需要提供任何 GitHub 網址，直接輸入以下指令即可：
+當您完成上述自註冊後，您可以直接進入專案清單中的 **「專案初始化助手」** 專案，並開啟新對話。此時您不需要提供任何 GitHub 網址，直接輸入以下指令即可：
 
 ```text
 建立新專案
@@ -61,7 +61,7 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 
 **AI 將會引導您執行以下極簡流程**：
 1. 詢問您的 **專案名稱** (例如：`諸葛防禦系統`)。
-2. **確認建立路徑** (預設會自動定位為懶人包資料夾的上層目錄，如 `D:\AntiGravity2\諸葛防禦系統`)。
+2. **確認建立路徑** (預設會自動定位為專案初始化助手資料夾的上層目錄，如 `D:\AntiGravity2\諸葛防禦系統`)。
 3. 其餘設定（NotebookLM、生圖指引）將預設直接啟用，若無特別需求，直接按 Enter 確認路徑即可在一鍵建立完成！
 
 ---
@@ -69,7 +69,7 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 ### 方式二：手動執行 (從 GitHub 載入)
 若您在其他乾淨電腦上，尚未進行自註冊，也可以直接複製 GitHub 網址，並對 AI 輸入：
 ```text
-這是我的 AntiGravity 2.0 專案初始化懶人包：
+這是我的 AntiGravity 2.0 專案初始化專案初始化助手：
 https://github.com/<您的帳號>/antigravity-lazy-pack
 
 請讀取其中的 SKILL.md 技能，並協助我初始化一個新專案。
@@ -79,7 +79,7 @@ https://github.com/<您的帳號>/antigravity-lazy-pack
 
 ### 方式三：在 PowerShell 中手動執行
 
-如果您想在終端機中手動執行建立，可以在本懶人包目錄下開啟 PowerShell，並執行以下指令：
+如果您想在終端機中手動執行建立，可以在本專案初始化助手目錄下開啟 PowerShell，並執行以下指令：
 
 ```powershell
 # 解除 PowerShell 腳本執行限制並執行初始化

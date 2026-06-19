@@ -25,10 +25,10 @@ param (
     [switch]$RegisterSelf
 )
 
-# 處理自註冊模式 (將懶人包自己註冊至專案清單)
+# 處理自註冊模式 (將專案初始化助手自己註冊至專案清單)
 if ($RegisterSelf) {
     Write-Host "==========================================" -ForegroundColor Cyan
-    Write-Host "  正在將「懶人包」自己註冊至專案清單..." -ForegroundColor Cyan
+    Write-Host "  正在將「專案初始化助手」自己註冊至專案清單..." -ForegroundColor Cyan
     Write-Host "==========================================" -ForegroundColor Cyan
 
     $SelfDir = $PSScriptRoot
@@ -36,7 +36,7 @@ if ($RegisterSelf) {
         $SelfDir = Get-Location
     }
     $SelfDir = [System.IO.Path]::GetFullPath($SelfDir)
-    $SelfName = "懶人包"
+    $SelfName = "專案初始化助手"
 
     $ConfigProjectsDir = Join-Path $env:USERPROFILE ".gemini/config/projects"
     if (-not (Test-Path $ConfigProjectsDir)) {
@@ -79,7 +79,7 @@ if ($RegisterSelf) {
 "@
     $SelfJsonPath = Join-Path $ConfigProjectsDir "$SelfId.json"
     [System.IO.File]::WriteAllText($SelfJsonPath, $SelfJson)
-    Write-Host "「懶人包」已成功註冊至 AntiGravity 清單！設定檔: $SelfJsonPath" -ForegroundColor Green
+    Write-Host "「專案初始化助手」已成功註冊至 AntiGravity 清單！設定檔: $SelfJsonPath" -ForegroundColor Green
     Write-Host "請重新整理專案清單或重啟 AntiGravity 以顯示它。`n"
     exit 0
 }
@@ -95,7 +95,7 @@ if ([string]::IsNullOrEmpty($Personality)) {
     $Personality = "未設定特別個性化，請由 AI 自由發揮並依據開發歷程學習調整。"
 }
 if ([string]::IsNullOrEmpty($TargetParentDir)) {
-    # 動態以腳本所在位置（懶人包資料夾）的上層目錄作為預設的 TargetParentDir
+    # 動態以腳本所在位置（專案初始化助手資料夾）的上層目錄作為預設的 TargetParentDir
     $ScriptDir = $PSScriptRoot
     if ([string]::IsNullOrEmpty($ScriptDir)) {
         $ScriptDir = Get-Location
