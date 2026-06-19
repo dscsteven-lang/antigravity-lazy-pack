@@ -111,19 +111,19 @@ if (Test-Path $AgentsTemplate) {
     $AgentsContent = $AgentsContent.Replace("{{PROJECT_NAME}}", $ProjectName)
     $AgentsContent = $AgentsContent.Replace("{{PROJECT_PERSONALITY}}", $Personality)
     
-    $NotebookLMVal = if ($EnableNotebookLM) { "已連線 (請確認 nlm cli 可正常執行)" } else { "未連線 (有需要時可手動設定)" }
-    $GithubVal = if ($EnableGitHubCLI) { "已連線 (請確認 gh auth status 可正常執行)" } else { "未連線 (有需要時可手動設定)" }
+    $NotebookLMVal = if ($EnableNotebookLM) { "已連線，請確認 nlm 指令可正常執行" } else { "未連線，有需要時可手動設定" }
+    $GithubVal = if ($EnableGitHubCLI) { "已連線，請確認 gh 授權狀態正常" } else { "未連線，有需要時可手動設定" }
     
     $DrawGuidelineText = ""
     if ($EnableDrawGuideline) {
         $DrawGuidelineText = @"
-## 🎨 生圖指引與 UI 設計規範 (已啟用)
-- **工具使用**：當需要設計網頁、UI 介面或產生圖示素材時，使用 generate_image 工具。
+## 🎨 生圖指引與 UI 設計規範
+- **工具使用**：當需要設計網頁、介面或產生圖示素材時，使用 generate_image 工具。
 - **生圖規範**：
-  - 生成 UI 設計圖時，僅產生介面本身，不包含外圍的設備外框（如電腦、手機等形狀），除非使用者明確要求。
-  - 設計應使用高質感現代配色，避免純紅、純綠、純藍等單調配色，優先採用漸層、玻璃擬態（Glassmorphism）與和諧的 HSL 調色盤。
-  - 將專案引用的正式圖片/素材保存在專案的 assets/ 目錄中，並以小寫及底線命名。
-  - **Git 安全**：暫時生成或測試用的臨時圖片，請放置於 .gitignore 排除的目錄（如 temp/ 或 scratch/），切勿直接 commit 到 Git。
+  - 生成介面設計圖時，僅產生介面本身，不包含外圍的設備外框（例如電腦、手機等形狀），除非使用者明確要求。
+  - 設計應使用高質感現代配色，避免純紅、純綠、純藍等單調配色，優先採用漸層、玻璃擬態與和諧的調色盤。
+  - 將專案引用的正式圖片與素材保存在專案的 assets 目錄中，並以小寫及底線命名。
+  - **Git 安全**：暫時生成或測試用的臨時圖片，請放置於排除的目錄（例如 temp 或 scratch），切勿直接提交到 Git。
 "@
     }
     
