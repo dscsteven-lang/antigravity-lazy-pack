@@ -1,4 +1,4 @@
-# Create-AntiGravityProject.ps1
+﻿# Create-AntiGravityProject.ps1
 # AntiGravity 2.0 新專案自動初始化腳本
 
 param (
@@ -8,7 +8,7 @@ param (
     [Parameter(Mandatory=$true)]
     [string]$FolderName,
 
-    [string]$Personality = "未設定特別個性化，請由 AI 自由發揮並依據開發歷程學習調整。",
+    [string]$Personality = "",
 
     [switch]$EnableNotebookLM,
 
@@ -22,8 +22,16 @@ param (
 
     [switch]$EnableDrawGuideline,
 
-    [string]$TargetParentDir = "G:/我的雲端硬碟/AntiGravity2/"
+    [string]$TargetParentDir = ""
 )
+
+# 在 param 區塊外部設定含有中文的預設值，避免 Windows PowerShell 5.1 解析 param block 時發生編碼逃逸錯誤
+if ([string]::IsNullOrEmpty($Personality)) {
+    $Personality = "未設定特別個性化，請由 AI 自由發揮並依據開發歷程學習調整。"
+}
+if ([string]::IsNullOrEmpty($TargetParentDir)) {
+    $TargetParentDir = "G:/我的雲端硬碟/AntiGravity2/"
+}
 
 # 設定 PowerShell 輸出為 UTF-8
 $OutputEncoding = [System.Text.Encoding]::UTF8
