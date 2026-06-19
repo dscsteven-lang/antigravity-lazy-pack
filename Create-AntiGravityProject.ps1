@@ -2,10 +2,8 @@
 # AntiGravity 2.0 新專案自動初始化腳本
 
 param (
-    [Parameter(Mandatory=$true)]
     [string]$ProjectName,
 
-    [Parameter(Mandatory=$true)]
     [string]$FolderName,
 
     [string]$Personality = "",
@@ -22,8 +20,75 @@ param (
 
     [switch]$EnableDrawGuideline,
 
-    [string]$TargetParentDir = ""
+    [string]$TargetParentDir = "",
+
+    [switch]$RegisterSelf
 )
+
+# 處理自註冊模式 (將懶人包自己註冊至專案清單)
+if ($RegisterSelf) {
+    Write-Host "==========================================" -ForegroundColor Cyan
+    Write-Host "  正在將「懶人包」自己註冊至專案清單..." -ForegroundColor Cyan
+    Write-Host "==========================================" -ForegroundColor Cyan
+
+    $SelfDir = $PSScriptRoot
+    if ([string]::IsNullOrEmpty($SelfDir)) {
+        $SelfDir = Get-Location
+    }
+    $SelfDir = [System.IO.Path]::GetFullPath($SelfDir)
+    $SelfName = "懶人包"
+
+    $ConfigProjectsDir = Join-Path $env:USERPROFILE ".gemini/config/projects"
+    if (-not (Test-Path $ConfigProjectsDir)) {
+        New-Item -ItemType Directory -Path $ConfigProjectsDir -Force | Out-Null
+    }
+    $SelfId = [guid]::NewGuid().ToString()
+
+    $UriSegments = $SelfDir.Replace('\', '/').Split('/')
+    $EscapedSegments = @()
+    foreach ($seg in $UriSegments) {
+        if ($seg -like "*:") {
+            $EscapedSegments += $seg.ToLower().Replace(":", "%3A")
+        } else {
+            $EscapedSegments += [System.Uri]::EscapeDataString($seg)
+        }
+    }
+    $SelfUri = "file:///" + ($EscapedSegments -join "/")
+
+    $SelfJson = @"
+{
+  "id":  "$SelfId",
+  "name":  "$SelfName",
+  "projectResources":  {
+    "resources":  [
+      {
+        "gitFolder":  {
+          "folderUri":  "$SelfUri",
+          "defaultBranch":  "main"
+        }
+      }
+    ]
+  },
+  "settings":  {
+    "fileAccessPolicy":  "AGENT_SETTING_POLICY_ALLOW",
+    "internetPolicy":  "AGENT_SETTING_POLICY_ASK",
+    "autoExecutionPolicy":  "CASCADE_COMMANDS_AUTO_EXECUTION_EAGER",
+    "artifactReviewMode":  "ARTIFACT_REVIEW_MODE_ALWAYS"
+  }
+}
+"@
+    $SelfJsonPath = Join-Path $ConfigProjectsDir "$SelfId.json"
+    [System.IO.File]::WriteAllText($SelfJsonPath, $SelfJson)
+    Write-Host "「懶人包」已成功註冊至 AntiGravity 清單！設定檔: $SelfJsonPath" -ForegroundColor Green
+    Write-Host "請重新整理專案清單或重啟 AntiGravity 以顯示它。`n"
+    exit 0
+}
+
+# 若非自註冊，則確保必要參數存在
+if ([string]::IsNullOrEmpty($ProjectName) -or [string]::IsNullOrEmpty($FolderName)) {
+    Write-Error "錯誤：非自註冊模式下，請提供必要的 -ProjectName 與 -FolderName 參數。"
+    exit 1
+}
 
 # 在 param 區塊外部設定含有中文的預設值，避免 Windows PowerShell 5.1 解析 param block 時發生編碼逃逸錯誤
 if ([string]::IsNullOrEmpty($Personality)) {
