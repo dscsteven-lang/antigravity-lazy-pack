@@ -45,15 +45,55 @@ Write-Host "------------------------------------------"
 $ProjectDir = Join-Path $TargetParentDir $FolderName
 $ProjectDir = [System.IO.Path]::GetFullPath($ProjectDir)
 
-Write-Host "正在建立專案目錄..." -ForegroundColor Yellow
-if (-not (Test-Path $ProjectDir)) {
-    New-Item -ItemType Directory -Path $ProjectDir -Force | Out-Null
-    Write-Host "成功建立資料夾: $ProjectDir" -ForegroundColor Green
-} else {
-    Write-Host "資料夾已存在: $ProjectDir" -ForegroundColor Yellow
+# 偵測 Git 是否可用
+$HasGit = $false
+if (Get-Command git -ErrorAction SilentlyContinue) {
+    $HasGit = $true
 }
 
-# 2. 建立記憶與自訂設定子目錄
+# 2. 目錄建立與 Git 初始化 / Clone
+if ($HasGit -and -not [string]::IsNullOrEmpty($GithubRepoUrl)) {
+    # 情況 A: 使用者提供了既有的 GitHub 儲存庫 URL，執行 Git Clone
+    Write-Host "正在檢查本地目錄狀態..." -ForegroundColor Yellow
+    if (-not (Test-Path $ProjectDir) -or -not (Test-Path (Join-Path $ProjectDir ".git"))) {
+        Write-Host "正在從 GitHub 複製既有儲存庫至 $ProjectDir ..." -ForegroundColor Yellow
+        git clone $GithubRepoUrl $ProjectDir
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "儲存庫複製成功！" -ForegroundColor Green
+        } else {
+            Write-Error "儲存庫複製失敗，請確認 URL 是否正確或是否有權限。"
+            exit 1
+        }
+    } else {
+        Write-Host "本地目錄已存在且已為 Git 儲存庫，跳過複製步驟。" -ForegroundColor Yellow
+    }
+} else {
+    # 情況 B: 全新專案，直接建立資料夾
+    Write-Host "正在建立專案目錄..." -ForegroundColor Yellow
+    if (-not (Test-Path $ProjectDir)) {
+        New-Item -ItemType Directory -Path $ProjectDir -Force | Out-Null
+        Write-Host "成功建立資料夾: $ProjectDir" -ForegroundColor Green
+    } else {
+        Write-Host "資料夾已存在: $ProjectDir" -ForegroundColor Yellow
+    }
+
+    # 初始化 Git
+    if ($HasGit) {
+        Write-Host "正在初始化本地 Git 儲存庫..." -ForegroundColor Yellow
+        if (-not (Test-Path (Join-Path $ProjectDir ".git"))) {
+            Push-Location $ProjectDir
+            git init | Out-Null
+            Pop-Location
+            Write-Host "Git 儲存庫初始化成功！" -ForegroundColor Green
+        } else {
+            Write-Host "Git 儲存庫先前已初始化。" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Warning "未在本機找到 git 指令，跳過 Git 初始化。請手動安裝 Git。"
+    }
+}
+
+# 3. 建立記憶與自訂設定子目錄
 $MemoryDir = Join-Path $ProjectDir "記憶"
 $TranscriptDir = Join-Path $MemoryDir "對話歷史記憶"
 $RuleDir = Join-Path $MemoryDir "自訂規則記憶"
@@ -67,23 +107,6 @@ foreach ($dir in $DirsToCreate) {
     }
 }
 
-# 3. 初始化 Git 儲存庫
-Write-Host "正在初始化 Git 儲存庫..." -ForegroundColor Yellow
-$HasGit = $false
-if (Get-Command git -ErrorAction SilentlyContinue) {
-    $HasGit = $true
-    if (-not (Test-Path (Join-Path $ProjectDir ".git"))) {
-        Push-Location $ProjectDir
-        git init | Out-Null
-        Pop-Location
-        Write-Host "Git 儲存庫初始化成功！" -ForegroundColor Green
-    } else {
-        Write-Host "Git 儲存庫先前已初始化。" -ForegroundColor Yellow
-    }
-} else {
-    Write-Warning "未在本機找到 git 指令，跳過 Git 初始化。請手動安裝 Git。"
-}
-
 # 4. 複製與處理模板檔案
 $ScriptDir = $PSScriptRoot
 if ([string]::IsNullOrEmpty($ScriptDir)) {
@@ -93,11 +116,26 @@ if ([string]::IsNullOrEmpty($ScriptDir)) {
 $GitignoreTemplate = Join-Path $ScriptDir "templates/gitignore.template"
 $AgentsTemplate = Join-Path $ScriptDir "templates/AGENTS.md"
 
-# 4.1 複製並建立 .gitignore
+# 4.1 處理 .gitignore (若已有舊檔，則安全附加規則而非覆蓋)
 $TargetGitignore = Join-Path $ProjectDir ".gitignore"
 if (Test-Path $GitignoreTemplate) {
-    Copy-Item -Path $GitignoreTemplate -Destination $TargetGitignore -Force
-    Write-Host "建立 .gitignore 成功。" -ForegroundColor Green
+    if (Test-Path $TargetGitignore) {
+        # 讀取現有內容
+        $ExistingContent = Get-Content -Path $TargetGitignore -Raw -Encoding utf8
+        if ($ExistingContent -notmatch "AntiGravity temporary files") {
+            Write-Host "正在將 AntiGravity 快取排除規則附加至現有的 .gitignore 中..." -ForegroundColor Yellow
+            $TemplateContent = Get-Content -Path $GitignoreTemplate -Raw -Encoding utf8
+            $MergedContent = $ExistingContent + "`n`n# ==========================================`n# AntiGravity 2.0 自動附加快取排除規則`n# ==========================================`n" + $TemplateContent
+            [System.IO.File]::WriteAllText($TargetGitignore, $MergedContent, [System.Text.Encoding]::UTF8)
+            Write-Host "已成功合併 .gitignore 規則。" -ForegroundColor Green
+        } else {
+            Write-Host ".gitignore 中已包含 AntiGravity 規則，跳過合併。" -ForegroundColor Gray
+        }
+    } else {
+        # 直接複製
+        Copy-Item -Path $GitignoreTemplate -Destination $TargetGitignore -Force
+        Write-Host "建立 .gitignore 成功。" -ForegroundColor Green
+    }
 } else {
     Write-Warning "未找到 gitignore 模板: $GitignoreTemplate，跳過複製。"
 }
@@ -168,39 +206,33 @@ if ($EnableNotebookLM) {
     }
 }
 
-# 6. 自動化在 GitHub 上建立或關聯遠端儲存庫
-if (($CreateGithubRepo -or -not [string]::IsNullOrEmpty($GithubRepoUrl)) -and $HasGit) {
+# 6. 自動化在 GitHub 上建立或關聯遠端儲存庫並 Push
+if ($HasGit) {
     Push-Location $ProjectDir
     
-    # 確保有 initial commit，否則無法 push
-    git rev-parse --quiet --verify HEAD | Out-Null
-    if ($LASTEXITCODE -ne 0) {
+    # 檢查是否有未提交的修改
+    $gitStatus = git status --porcelain 2>&1
+    if (-not [string]::IsNullOrEmpty($gitStatus)) {
+        Write-Host "正在提交本地新增的設定檔..." -ForegroundColor Yellow
         git add . | Out-Null
-        git commit -m "Initial commit: $ProjectName project initialized by AntiGravity Lazy Pack" | Out-Null
-        git branch -M main | Out-Null
+        git commit -m "Configure AntiGravity rules and memory settings" | Out-Null
     }
 
     if (-not [string]::IsNullOrEmpty($GithubRepoUrl)) {
-        Write-Host "正在關聯現有的 GitHub 儲存庫: $GithubRepoUrl ..." -ForegroundColor Yellow
-        $existingRemote = git remote 2>&1
-        if ($existingRemote -match "origin") {
-            git remote set-url origin $GithubRepoUrl | Out-Null
+        # 既然是 clone 下來的，直接執行推送即可，不需重新 add remote
+        Write-Host "正在將初始化設定推送至 GitHub 儲存庫..." -ForegroundColor Yellow
+        $pushResult = git push 2>&1
+        if ($LASTEXITCODE -eq 0 -or $pushResult -match "Everything up-to-date") {
+            Write-Host "初始化設定已成功推送至您的 GitHub 分支！" -ForegroundColor Green
         } else {
-            git remote add origin $GithubRepoUrl | Out-Null
-        }
-        
-        Write-Host "正在推送程式碼至 $GithubRepoUrl ..." -ForegroundColor Yellow
-        $pushResult = git push -u origin main 2>&1
-        if ($pushResult -match "branch 'main' set up to track" -or $pushResult -match "Everything up-to-date") {
-            Write-Host "成功關聯並推送程式碼至現有儲存庫！" -ForegroundColor Green
-        } else {
-            Write-Warning "推送程式碼失敗，可能因為遠端儲存庫非空或無權限。詳細輸出："
+            Write-Warning "自動推送失敗。可能需要您手動進行驗證或分支設定。輸出如下："
             Write-Host $pushResult -ForegroundColor Red
         }
     }
     elseif ($CreateGithubRepo) {
         Write-Host "正在嘗試在 GitHub 上建立新的同名儲存庫..." -ForegroundColor Yellow
         if (Get-Command gh -ErrorAction SilentlyContinue) {
+            git branch -M main | Out-Null
             $ghResult = gh repo create $FolderName --public --source=. --remote=origin --push 2>&1
             if ($ghResult -match "https://github.com") {
                 Write-Host "GitHub 儲存庫建立並推送成功！" -ForegroundColor Green
@@ -211,9 +243,6 @@ if (($CreateGithubRepo -or -not [string]::IsNullOrEmpty($GithubRepoUrl)) -and $H
             }
         } else {
             Write-Warning "未在本機找到 GitHub CLI (gh) 指令，無法自動建立儲存庫。"
-            Write-Host "請手動在 GitHub 上建立 $FolderName 儲存庫，並在專案目錄執行：" -ForegroundColor Gray
-            Write-Host "  git remote add origin https://github.com/<您的帳號>/$FolderName.git" -ForegroundColor Gray
-            Write-Host "  git push -u origin main" -ForegroundColor Gray
         }
     }
     
@@ -230,7 +259,7 @@ if (-not (Test-Path $ConfigProjectsDir)) {
 # 產生 UUID
 $ProjectId = [guid]::NewGuid().ToString()
 
-# 計算 URL 百分比編碼的 folderUri
+# 計算 URL 百分比編碼的 folderUri (強制磁碟代號為小寫)
 $UriSegments = $ProjectDir.Replace('\', '/').Split('/')
 $EscapedSegments = @()
 foreach ($seg in $UriSegments) {
