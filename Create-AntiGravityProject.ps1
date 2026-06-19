@@ -266,7 +266,7 @@ $ProjectJson = @"
 "@
 
 $JsonFilePath = Join-Path $ConfigProjectsDir "$ProjectId.json"
-[System.IO.File]::WriteAllText($JsonFilePath, $ProjectJson, [System.Text.Encoding]::UTF8)
+[System.IO.File]::WriteAllText($JsonFilePath, $ProjectJson)
 Write-Host "成功將專案註冊至 AntiGravity 清單！設定檔: $JsonFilePath" -ForegroundColor Green
 
 # 8. 成功輸出
