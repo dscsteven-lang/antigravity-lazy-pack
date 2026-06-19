@@ -173,7 +173,8 @@ if (($CreateGithubRepo -or -not [string]::IsNullOrEmpty($GithubRepoUrl)) -and $H
     Push-Location $ProjectDir
     
     # 確保有 initial commit，否則無法 push
-    if (-not (git log -n 1 2>&1 -match "commit")) {
+    git rev-parse --quiet --verify HEAD | Out-Null
+    if ($LASTEXITCODE -ne 0) {
         git add . | Out-Null
         git commit -m "Initial commit: $ProjectName project initialized by AntiGravity Lazy Pack" | Out-Null
         git branch -M main | Out-Null
