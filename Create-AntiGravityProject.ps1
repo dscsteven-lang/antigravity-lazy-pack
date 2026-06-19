@@ -93,12 +93,42 @@ foreach ($dir in $DirsToCreate) {
 if ($HasGit) {
     if (-not [string]::IsNullOrEmpty($GithubRepoUrl)) {
         if (-not (Test-Path $RepoDir) -or -not (Test-Path (Join-Path $RepoDir ".git"))) {
-            Write-Host "正在從 GitHub 複製既有儲存庫至子目錄 $RepoDir ..." -ForegroundColor Yellow
-            git clone $GithubRepoUrl $RepoDir
+            # 偵測是否已安裝並登入 GitHub CLI (gh)
+            $HasGhLoggedIn = $false
+            if (Get-Command gh -ErrorAction SilentlyContinue) {
+                $ghStatus = gh auth status 2>&1 | Out-String
+                if ($ghStatus -match "Logged in to") {
+                    $HasGhLoggedIn = $true
+                }
+            }
+
+            if ($HasGhLoggedIn) {
+                Write-Host "偵測到 GitHub CLI 已登入，將使用 gh repo clone 進行複製（可自動處理私有庫憑證）..." -ForegroundColor Gray
+                gh repo clone $GithubRepoUrl $RepoDir
+            } else {
+                Write-Host "使用標準 git clone 複製儲存庫..." -ForegroundColor Gray
+                git clone $GithubRepoUrl $RepoDir
+            }
+
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "儲存庫複製成功！" -ForegroundColor Green
             } else {
-                Write-Error "儲存庫複製失敗，請確認 URL 是否正確或是否有權限。"
+                Write-Host ""
+                Write-Host "======================================================================" -ForegroundColor Red
+                Write-Host "❌ 儲存庫複製失敗！" -ForegroundColor Red
+                Write-Host "======================================================================" -ForegroundColor Red
+                Write-Host "如果您所連接的是私有儲存庫（Private Repository）："
+                Write-Host "由於 AI Agent 的執行環境為「非互動式」，Git 預設無法為您彈出驗證/登入視窗。"
+                Write-Host ""
+                Write-Host "💡 請透過以下任一方法解決後，再重新執行一次："
+                Write-Host "  👉 方法一：在此電腦的終端機（PowerShell）中手動執行一次登入："
+                Write-Host "             gh auth login"
+                Write-Host "             （登入完成後，腳本將能自動讀取憑證並順利執行）"
+                Write-Host ""
+                Write-Host "  👉 方法二：在此電腦的終端機中，手動複製該儲存庫（藉此彈出登入視窗並儲存憑證）："
+                Write-Host "             git clone $GithubRepoUrl `"$RepoDir`""
+                Write-Host "             （手動 clone 成功後，再重新執行本初始化腳本，腳本會自動跳過 clone 步驟）"
+                Write-Host "======================================================================" -ForegroundColor Red
                 exit 1
             }
         } else {

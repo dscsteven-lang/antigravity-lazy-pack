@@ -17,6 +17,7 @@ description: AntiGravity 2.0 新專案初始化懶人包。當使用者說「建
 4. **是否連線 NotebookLM MCP** (是/否)
 5. **是否啟用生圖指引與 UI 設計規範** (是/否)
 6. **GitHub 與遠端 Git 設定** (請選擇：1. 自動新建 GitHub 儲存庫；2. 關聯現有的 GitHub 儲存庫 URL（需提供網址）；3. 不需要)
+   *(💡 提示：若為 **私有儲存庫**，請確認此電腦已登入 GitHub CLI `gh auth login` 或曾手動 clone 成功以儲存憑證。因 AI 背景執行為非互動式，無法彈出登入視窗。)*
 
 ### 步驟二：列出預設規則並詢問是否增刪
 向使用者展示預設套用於新專案 `.agents/AGENTS.md` 的核心規則：
