@@ -16,6 +16,8 @@ param (
 
     [switch]$CreateGithubRepo,
 
+    [string]$GithubRepoUrl,
+
     [switch]$EnableDrawGuideline,
 
     [string]$TargetParentDir = "G:/我的雲端硬碟/AntiGravity2/"
@@ -35,6 +37,7 @@ Write-Host "專案個性化: $Personality"
 Write-Host "NotebookLM MCP 連接: $(if ($EnableNotebookLM) { '是' } else { '否' })"
 Write-Host "GitHub CLI 連接: $(if ($EnableGitHubCLI) { '是' } else { '否' })"
 Write-Host "GitHub 遠端儲存庫建立: $(if ($CreateGithubRepo) { '是' } else { '否' })"
+Write-Host "GitHub 遠端儲存庫 URL: $(if ($GithubRepoUrl) { $GithubRepoUrl } else { '無' })"
 Write-Host "生圖指引與 UI 規範: $(if ($EnableDrawGuideline) { '是' } else { '否' })"
 Write-Host "------------------------------------------"
 
@@ -165,34 +168,55 @@ if ($EnableNotebookLM) {
     }
 }
 
-# 6. 自動化在 GitHub 上建立遠端儲存庫
-if ($CreateGithubRepo -and $HasGit) {
-    Write-Host "正在嘗試在 GitHub 上建立新的同名儲存庫..." -ForegroundColor Yellow
-    if (Get-Command gh -ErrorAction SilentlyContinue) {
-        # 先進行一個 initial commit 以便 push
-        Push-Location $ProjectDir
+# 6. 自動化在 GitHub 上建立或關聯遠端儲存庫
+if (($CreateGithubRepo -or -not [string]::IsNullOrEmpty($GithubRepoUrl)) -and $HasGit) {
+    Push-Location $ProjectDir
+    
+    # 確保有 initial commit，否則無法 push
+    if (-not (git log -n 1 2>&1 -match "commit")) {
         git add . | Out-Null
         git commit -m "Initial commit: $ProjectName project initialized by AntiGravity Lazy Pack" | Out-Null
         git branch -M main | Out-Null
-        
-        # 執行遠端建立並自動 push
-        # gh repo create <name> --public --source=. --remote=origin --push
-        $ghResult = gh repo create $FolderName --public --source=. --remote=origin --push 2>&1
-        Pop-Location
-        
-        if ($ghResult -match "https://github.com") {
-            Write-Host "GitHub 儲存庫建立並推送成功！" -ForegroundColor Green
-            Write-Host "連結: https://github.com/dscsteven-lang/$FolderName" -ForegroundColor Green
-        } else {
-            Write-Warning "自動建立 GitHub 儲存庫失敗。可能因為未登入或已存在同名倉庫。詳細輸出："
-            Write-Host $ghResult -ForegroundColor Red
-        }
-    } else {
-        Write-Warning "未在本機找到 GitHub CLI (gh) 指令，無法自動建立儲存庫。"
-        Write-Host "請手動在 GitHub 上建立 $FolderName 儲存庫，並在專案目錄執行：" -ForegroundColor Gray
-        Write-Host "  git remote add origin https://github.com/<您的帳號>/$FolderName.git" -ForegroundColor Gray
-        Write-Host "  git push -u origin main" -ForegroundColor Gray
     }
+
+    if (-not [string]::IsNullOrEmpty($GithubRepoUrl)) {
+        Write-Host "正在關聯現有的 GitHub 儲存庫: $GithubRepoUrl ..." -ForegroundColor Yellow
+        $existingRemote = git remote 2>&1
+        if ($existingRemote -match "origin") {
+            git remote set-url origin $GithubRepoUrl | Out-Null
+        } else {
+            git remote add origin $GithubRepoUrl | Out-Null
+        }
+        
+        Write-Host "正在推送程式碼至 $GithubRepoUrl ..." -ForegroundColor Yellow
+        $pushResult = git push -u origin main 2>&1
+        if ($pushResult -match "branch 'main' set up to track" -or $pushResult -match "Everything up-to-date") {
+            Write-Host "成功關聯並推送程式碼至現有儲存庫！" -ForegroundColor Green
+        } else {
+            Write-Warning "推送程式碼失敗，可能因為遠端儲存庫非空或無權限。詳細輸出："
+            Write-Host $pushResult -ForegroundColor Red
+        }
+    }
+    elseif ($CreateGithubRepo) {
+        Write-Host "正在嘗試在 GitHub 上建立新的同名儲存庫..." -ForegroundColor Yellow
+        if (Get-Command gh -ErrorAction SilentlyContinue) {
+            $ghResult = gh repo create $FolderName --public --source=. --remote=origin --push 2>&1
+            if ($ghResult -match "https://github.com") {
+                Write-Host "GitHub 儲存庫建立並推送成功！" -ForegroundColor Green
+                Write-Host "連結: https://github.com/dscsteven-lang/$FolderName" -ForegroundColor Green
+            } else {
+                Write-Warning "自動建立 GitHub 儲存庫失敗。可能因為未登入或已存在同名倉庫。詳細輸出："
+                Write-Host $ghResult -ForegroundColor Red
+            }
+        } else {
+            Write-Warning "未在本機找到 GitHub CLI (gh) 指令，無法自動建立儲存庫。"
+            Write-Host "請手動在 GitHub 上建立 $FolderName 儲存庫，並在專案目錄執行：" -ForegroundColor Gray
+            Write-Host "  git remote add origin https://github.com/<您的帳號>/$FolderName.git" -ForegroundColor Gray
+            Write-Host "  git push -u origin main" -ForegroundColor Gray
+        }
+    }
+    
+    Pop-Location
 }
 
 # 7. 自動向 AntiGravity 2.0 註冊此專案 (寫入專案設定 JSON 檔)

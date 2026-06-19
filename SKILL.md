@@ -17,16 +17,20 @@ description: AntiGravity 2.0 新專案初始化懶人包。當使用者說「建
 4. **是否連線 NotebookLM MCP** (是/否)
 5. **是否連線 GitHub CLI** (是/否)
 6. **是否啟用生圖指引與 UI 設計規範** (是/否，適用於前端、UI 設計或需要視覺素材之專案)
-7. **是否在 GitHub 上自動建立與推送同名儲存庫** (是/否)
+7. **GitHub 儲存庫設定** (請詢問是需要：1. 自動新建同名儲存庫；2. 關聯您「已建立好」的 GitHub 儲存庫 URL；3. 不需要)
 
 ### 步驟二：執行專案建立指令
 收集齊全資訊後，請在工作區中尋找 `Create-AntiGravityProject.ps1` 的絕對路徑（若在目前懶人包目錄，路徑為 `g:\我的雲端硬碟\AntiGravity2\懶人包\Create-AntiGravityProject.ps1`），並在系統終端機中透過 `run_command` 執行此 PowerShell 腳本。
 
 執行指令格式範例：
 ```powershell
-powershell -ExecutionPolicy Bypass -File "g:\我的雲端硬碟\AntiGravity2\懶人包\Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "資料夾名稱" -Personality "個性化設定描述" -EnableNotebookLM -EnableGitHubCLI -CreateGithubRepo -EnableDrawGuideline
+# 範例 1：自動新建 GitHub 儲存庫
+powershell -ExecutionPolicy Bypass -File "g:\我的雲端硬碟\AntiGravity2\懶人包\Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "資料夾名稱" -Personality "個性化描述" -EnableNotebookLM -EnableGitHubCLI -CreateGithubRepo -EnableDrawGuideline
+
+# 範例 2：關聯現有的 GitHub 儲存庫 URL
+powershell -ExecutionPolicy Bypass -File "g:\我的雲端硬碟\AntiGravity2\懶人包\Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "資料夾名稱" -Personality "個性化描述" -EnableNotebookLM -EnableGitHubCLI -GithubRepoUrl "https://github.com/您的帳號/專案儲存庫.git" -EnableDrawGuideline
 ```
-*(注意：依據使用者的選擇，若為「是」則加入對應參數，若為「否」則在命令中省略該參數)*
+*(注意：依據使用者的選擇，若為自動新建則帶入 `-CreateGithubRepo`；若為關聯現有庫，則帶入 `-GithubRepoUrl "URL"`；若不需要則兩者皆省略)*
 
 ### 步驟三：回報結果與開工指引
 腳本執行完畢後，請閱讀腳本的輸出，並以繁體中文向使用者回報：
