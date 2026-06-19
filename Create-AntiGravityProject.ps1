@@ -37,6 +37,40 @@ if ([string]::IsNullOrEmpty($TargetParentDir)) {
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+# 0. 本機環境與元件診斷
+$GitInstalled = $false
+$GitVersion = "未安裝"
+if (Get-Command git -ErrorAction SilentlyContinue) {
+    $GitInstalled = $true
+    $GitVersion = (git --version).Trim()
+}
+
+$GhInstalled = $false
+$GhLoggedIn = $false
+$GhUser = ""
+if (Get-Command gh -ErrorAction SilentlyContinue) {
+    $GhInstalled = $true
+    $ghAuth = gh auth status 2>&1 | Out-String
+    if ($ghAuth -match "Logged in to") {
+        $GhLoggedIn = $true
+        if ($ghAuth -match "as ([^\s]+)") {
+            $GhUser = $Matches[1]
+        }
+    }
+}
+
+$NlmInstalled = $false
+$NlmStatus = "未安裝"
+if (Get-Command nlm -ErrorAction SilentlyContinue) {
+    $NlmInstalled = $true
+    $nlmDoc = nlm doctor 2>&1 | Out-String
+    if ($nlmDoc -match "successful" -or $nlmDoc -match "OK") {
+        $NlmStatus = "正常運作"
+    } else {
+        $NlmStatus = "未登入或狀態異常"
+    }
+}
+
 # 自動決定程式碼子目錄名稱
 $RepoSubDirName = ""
 if (-not [string]::IsNullOrEmpty($GithubRepoUrl)) {
@@ -69,10 +103,7 @@ $ProjectDir = [System.IO.Path]::GetFullPath($ProjectDir)
 $RepoDir = Join-Path $ProjectDir $RepoSubDirName
 
 # 偵測 Git 是否可用
-$HasGit = $false
-if (Get-Command git -ErrorAction SilentlyContinue) {
-    $HasGit = $true
-}
+$HasGit = $GitInstalled
 
 # 2. 建立外層本地專案目錄 (不進版控，僅作為本地工作區)
 Write-Host "正在建立外層專案工作區..." -ForegroundColor Yellow
@@ -210,8 +241,8 @@ if (Test-Path $AgentsTemplate) {
     # 決定寫入規則檔中的子目錄名稱
     $AgentsContent = $AgentsContent.Replace("{{REPO_SUBDIR}}", $RepoSubDirName)
     
-    $NotebookLMVal = if ($EnableNotebookLM) { "已連線，請確認 nlm 指令可正常執行" } else { "未連線，有需要時可手動設定" }
-    $GithubVal = if ($EnableGitHubCLI) { "已連線，請確認 gh 授權狀態正常" } else { "未連線，有需要時可手動設定" }
+    $NotebookLMVal = if ($NlmInstalled -and ($NlmStatus -eq "正常運作")) { "已連線且本機可用 (nlm 狀態: $NlmStatus)" } else { "未連線，請確認本機是否安裝且登入 notebooklm-mcp-cli" }
+    $GithubVal = if ($GhInstalled -and $GhLoggedIn) { "已連線且本機可用 (帳號: $GhUser)" } else { "未連線，請確認本機是否安裝且登入 GitHub CLI" }
     
     $DrawGuidelineText = ""
     if ($EnableDrawGuideline) {
@@ -237,33 +268,17 @@ if (Test-Path $AgentsTemplate) {
     Write-Warning "未找到 AGENTS.md 模板: $AgentsTemplate，跳過複製。"
 }
 
-# 6. 連接 NotebookLM MCP 與 GitHub CLI 狀態確認
-if ($EnableGitHubCLI) {
-    Write-Host "正在確認 GitHub CLI 登入狀態..." -ForegroundColor Yellow
-    if (Get-Command gh -ErrorAction SilentlyContinue) {
-        $ghStatus = gh auth status 2>&1
-        if ($ghStatus -match "Logged in to") {
-            Write-Host "GitHub CLI 已完成授權登入。" -ForegroundColor Green
-        } else {
-            Write-Host "GitHub CLI 未登入，正開啟瀏覽器授權登入..." -ForegroundColor Yellow
-            gh auth login --web --git-protocol https
+# 6. 連接 GitHub CLI 授權登入（若使用者啟用且未登入，主動開啟瀏覽器登入）
+if ($EnableGitHubCLI -and -not $GhLoggedIn) {
+    if ($GhInstalled) {
+        Write-Host "GitHub CLI 未登入，正開啟瀏覽器授權登入..." -ForegroundColor Yellow
+        gh auth login --web --git-protocol https
+        # 重新整理登入狀態
+        $ghAuth = gh auth status 2>&1 | Out-String
+        if ($ghAuth -match "Logged in to") {
+            $GhLoggedIn = $true
+            if ($ghAuth -match "as ([^\s]+)") { $GhUser = $Matches[1] }
         }
-    } else {
-        Write-Warning "未在本機找到 GitHub CLI (gh) 指令，請先安裝 gh。"
-    }
-}
-
-if ($EnableNotebookLM) {
-    Write-Host "正在確認 NotebookLM MCP 狀態..." -ForegroundColor Yellow
-    if (Get-Command nlm -ErrorAction SilentlyContinue) {
-        $nlmDoctor = nlm doctor 2>&1
-        if ($nlmDoctor -match "OK" -or $nlmDoctor -match "successful") {
-            Write-Host "NotebookLM MCP CLI 運作正常！" -ForegroundColor Green
-        } else {
-            Write-Host "nlm 狀態異常，請在 PowerShell 中執行 'nlm login' 重新驗證。" -ForegroundColor Yellow
-        }
-    } else {
-        Write-Warning "未在本機找到 nlm 指令。請參考懶人包 README 安裝 notebooklm-mcp-cli。"
     }
 }
 
@@ -390,6 +405,49 @@ $ProjectJson = @"
 $JsonFilePath = Join-Path $ConfigProjectsDir "$ProjectId.json"
 [System.IO.File]::WriteAllText($JsonFilePath, $ProjectJson)
 Write-Host "成功將專案註冊至 AntiGravity 清單！設定檔: $JsonFilePath" -ForegroundColor Green
+
+# 8.5 輸出開發環境與相容性診斷報告
+Write-Host ""
+Write-Host "======================================================================" -ForegroundColor Cyan
+Write-Host "             🛠️  本機開發環境與相容性診斷報告" -ForegroundColor Cyan
+Write-Host "======================================================================" -ForegroundColor Cyan
+
+# Git 檢查
+if ($GitInstalled) {
+    Write-Host " [v] Git 版本控制   : 已安裝 ($GitVersion)" -ForegroundColor Green
+} else {
+    Write-Host " [x] Git 版本控制   : 未安裝！此機台將無法使用任何版本控制與自動分支機制。" -ForegroundColor Red
+    Write-Host "     👉 建議安裝指令：winget install --id Git.Git" -ForegroundColor Gray
+}
+
+# GitHub CLI 檢查
+if ($GhInstalled) {
+    if ($GhLoggedIn) {
+        Write-Host " [v] GitHub CLI     : 已安裝，且已完成授權登入 (帳號: $GhUser)" -ForegroundColor Green
+    } else {
+        Write-Host " [!] GitHub CLI     : 已安裝，但「尚未登入」！" -ForegroundColor Yellow
+        Write-Host "     👉 建議登入指令：gh auth login" -ForegroundColor Gray
+    }
+} else {
+    Write-Host " [x] GitHub CLI     : 未安裝！(若需要自動建立 GitHub 儲存庫或安全存取私有庫則為必備)" -ForegroundColor Red
+    Write-Host "     👉 建議安裝指令：winget install --id GitHub.cli" -ForegroundColor Gray
+}
+
+# NotebookLM 檢查
+if ($NlmInstalled) {
+    if ($NlmStatus -eq "正常運作") {
+        Write-Host " [v] NotebookLM MCP : 已安裝，且連線正常 (nlm doctor: OK)" -ForegroundColor Green
+    } else {
+        Write-Host " [!] NotebookLM MCP : 已安裝，但「連線狀態異常」($NlmStatus)！" -ForegroundColor Yellow
+        Write-Host "     👉 建議登入指令：nlm login" -ForegroundColor Gray
+    }
+} else {
+    Write-Host " [x] NotebookLM MCP : 未安裝！此專案將無法自動同步資料至 NotebookLM 記憶庫。" -ForegroundColor Red
+    Write-Host "     👉 建議安裝指令：" -ForegroundColor Gray
+    Write-Host "         1. npm install -g notebooklm-mcp-cli" -ForegroundColor Gray
+    Write-Host "         2. nlm login" -ForegroundColor Gray
+}
+Write-Host "======================================================================" -ForegroundColor Cyan
 
 # 9. 成功輸出
 Write-Host "==========================================" -ForegroundColor Green
