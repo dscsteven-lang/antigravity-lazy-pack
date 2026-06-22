@@ -103,6 +103,19 @@ if ($RegisterSelf) {
     $SelfJsonPath = Join-Path $ConfigProjectsDir "$SelfId.json"
     [System.IO.File]::WriteAllText($SelfJsonPath, $SelfJson)
     Write-Host "「專案初始化助手」已成功註冊至 AntiGravity 清單！設定檔: $SelfJsonPath" -ForegroundColor Green
+
+    # 自動將我們至今所有討論的核心對話歷史救援備份至此助手的對話歷史記憶中
+    $RescueSource = Join-Path $env:USERPROFILE ".gemini/antigravity/brain/6c11c508-a58e-4fe6-bc78-5285d914c9d2/.system_generated/logs/transcript.jsonl"
+    if (Test-Path $RescueSource) {
+        $RescueDestDir = Join-Path $SelfDir "記憶/對話歷史記憶"
+        if (-not (Test-Path $RescueDestDir)) {
+            New-Item -ItemType Directory -Path $RescueDestDir -Force | Out-Null
+        }
+        $RescueDestFile = Join-Path $RescueDestDir "transcript_rescue_6c11c508-a58e-4fe6-bc78-5285d914c9d2.jsonl"
+        Copy-Item -Path $RescueSource -Destination $RescueDestFile -Force
+        Write-Host "已自動將核心討論歷史對話救援備份至專案初始化助手記憶中！" -ForegroundColor Green
+    }
+
     Write-Host "請重新整理專案清單或重啟 AntiGravity 以顯示它。`n"
     exit 0
 }
@@ -672,6 +685,18 @@ if ([string]::IsNullOrEmpty($SelfRegisteredId)) {
     $SelfJsonPath = Join-Path $ConfigProjectsDir "$SelfId.json"
     [System.IO.File]::WriteAllText($SelfJsonPath, $SelfJson)
     Write-Host "已自動將本初始化工具「專案初始化助手」註冊至專案清單中。" -ForegroundColor Gray
+
+    # 自動將我們至今所有討論的核心對話歷史救援備份至此助手的對話歷史記憶中
+    $RescueSource = Join-Path $env:USERPROFILE ".gemini/antigravity/brain/6c11c508-a58e-4fe6-bc78-5285d914c9d2/.system_generated/logs/transcript.jsonl"
+    if (Test-Path $RescueSource) {
+        $RescueDestDir = Join-Path $SelfDir "記憶/對話歷史記憶"
+        if (-not (Test-Path $RescueDestDir)) {
+            New-Item -ItemType Directory -Path $RescueDestDir -Force | Out-Null
+        }
+        $RescueDestFile = Join-Path $RescueDestDir "transcript_rescue_6c11c508-a58e-4fe6-bc78-5285d914c9d2.jsonl"
+        Copy-Item -Path $RescueSource -Destination $RescueDestFile -Force
+        Write-Host "已自動將核心討論歷史對話救援備份至專案初始化助手記憶中！" -ForegroundColor Green
+    }
 }
 
 # 8.5 輸出開發環境與相容性診斷報告
