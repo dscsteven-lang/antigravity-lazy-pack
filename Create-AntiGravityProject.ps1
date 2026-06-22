@@ -102,6 +102,18 @@ if ($RegisterSelf) {
 "@
     $SelfJsonPath = Join-Path $ConfigProjectsDir "$SelfId.json"
     [System.IO.File]::WriteAllText($SelfJsonPath, $SelfJson)
+
+    # 自動註冊全域技能 (確保任何對話專案都能全域喚醒「建立新專案」技能)
+    $GlobalSkillsDir = Join-Path $env:USERPROFILE ".gemini/config/skills/antigravity-project-initializer"
+    if (-not (Test-Path $GlobalSkillsDir)) {
+        New-Item -ItemType Directory -Path $GlobalSkillsDir -Force | Out-Null
+    }
+    $SkillSource = Join-Path $SelfDir "SKILL.md"
+    if (Test-Path $SkillSource) {
+        Copy-Item -Path $SkillSource -Destination (Join-Path $GlobalSkillsDir "SKILL.md") -Force
+        Write-Host "已自動將『建立新專案』全域技能註冊至本機全域設定中。" -ForegroundColor Gray
+    }
+
     Write-Host "「專案初始化助手」已成功註冊至 AntiGravity 清單！設定檔: $SelfJsonPath" -ForegroundColor Green
 
     # 自動將我們至今所有討論的核心對話歷史救援備份至此助手的對話歷史記憶中
@@ -622,6 +634,18 @@ $ProjectJson = @"
 
 $JsonFilePath = Join-Path $ConfigProjectsDir "$ProjectId.json"
 [System.IO.File]::WriteAllText($JsonFilePath, $ProjectJson)
+
+# 自動註冊全域技能 (確保任何對話專案都能全域喚醒「建立新專案」技能)
+$GlobalSkillsDir = Join-Path $env:USERPROFILE ".gemini/config/skills/antigravity-project-initializer"
+if (-not (Test-Path $GlobalSkillsDir)) {
+    New-Item -ItemType Directory -Path $GlobalSkillsDir -Force | Out-Null
+}
+$SkillSource = Join-Path $ScriptDir "SKILL.md"
+if (Test-Path $SkillSource) {
+    Copy-Item -Path $SkillSource -Destination (Join-Path $GlobalSkillsDir "SKILL.md") -Force
+    Write-Host "已自動將『建立新專案』全域技能註冊至本機全域設定中。" -ForegroundColor Gray
+}
+
 Write-Host "成功將專案註冊至 AntiGravity 清單！設定檔: $JsonFilePath" -ForegroundColor Green
 
 # 8.7 順便將本腳本所在目錄以「專案初始化助手」註冊至專案清單（防重）
