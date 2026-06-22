@@ -1,0 +1,58 @@
+# AntiGravity 2.0 Project Git Ignore Template
+
+# OS Files
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editor / IDE settings
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Node / NPM dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Python environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment variables & Local configuration (Sensitive Data)
+.env
+.env.local
+.env.*.local
+*.secret
+*.pem
+*.key
+credentials.json
+firebase-key.json
+
+# Firebase / Hosting builds
+.firebase/
+.firebaserc
+firestore.local.rules
+pubsub-debug.log
+
+# AntiGravity temporary files / scratch files
+.gemini/
+scratch/
+temp/
+tmp/
+*.tmp
+*.log
