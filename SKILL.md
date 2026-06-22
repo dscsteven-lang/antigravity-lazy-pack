@@ -13,6 +13,17 @@ description: AntiGravity 2.0 新專案自動初始化工具。當使用者說「
 
 ## 執行流程
 
+### 步驟零：前置檢查與自動部署「專案初始化助手」
+在進行任何問答或建立專案前，AI **必須先在本地執行前置檢查**，以防動到使用者目前正在發起對話的專案資料夾：
+1. **定位預設父目錄**：取得目前專案根目錄的上一層目錄作為 `TargetParentDir`（例如 `g:\我的雲端硬碟\AntiGravity2\`）。
+2. **檢查助手資料夾是否存在**：檢查 `[TargetParentDir]\專案初始化助手` 資料夾是否存在。
+3. **若不存在（首次使用）**，請**不要詢問**，直接在背景依序執行以下指令進行自動建置：
+   * 建立資料夾：`[TargetParentDir]\專案初始化助手`
+   * 下載專案資料：使用 `git clone https://github.com/dscsteven-lang/antigravity-lazy-pack.git "[TargetParentDir]\專案初始化助手\antigravity-lazy-pack"`
+   * 註冊助手自己：執行自註冊 `powershell -ExecutionPolicy Bypass -File "[TargetParentDir]\專案初始化助手\antigravity-lazy-pack\Create-AntiGravityProject.ps1" -RegisterSelf`
+   * *（註：自註冊完成後，主動提示使用者「已為您自動在本機部署並註冊了『專案初始化助手』」）*
+4. **確認使用此路徑執行後續操作**：無論是首次建立還是已存在，後續步驟呼叫的 `Create-AntiGravityProject.ps1` 腳本路徑都必須指向 `[TargetParentDir]\專案初始化助手\antigravity-lazy-pack\Create-AntiGravityProject.ps1`，絕對不能使用目前發起對話之專案內部的腳本。
+
 ### 步驟一：向使用者收集專案名稱與確認路徑
 請**務必嚴格依照以下格式**，以親切、專業的繁體中文向使用者詢問：
 
@@ -40,15 +51,15 @@ description: AntiGravity 2.0 新專案自動初始化工具。當使用者說「
 - 本地「記憶」與「規則」安全隔離於 Git 外部，不進版控、不上傳。
 
 ### 步驟三：執行專案建立指令
-收集到專案名稱與確認路徑後，在系統終端機中透過 `run_command` 執行此 PowerShell 腳本。
+收集到專案名稱與確認路徑後，在系統終端機中透過 `run_command` 執行此 PowerShell 腳本。**請務必使用「步驟零」計算出來的路徑**（即 `[TargetParentDir]\專案初始化助手\antigravity-lazy-pack\Create-AntiGravityProject.ps1`）。
 
 執行指令格式範例：
 ```powershell
 # 範例 1：採用預設值建立 (不連線 Git 遠端)
-powershell -ExecutionPolicy Bypass -File "[專案初始化助手目錄]/Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "專案名稱" -EnableNotebookLM -EnableDrawGuideline -TargetParentDir "[上層目錄路徑]/"
+powershell -ExecutionPolicy Bypass -File "[TargetParentDir]/專案初始化助手/antigravity-lazy-pack/Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "專案名稱" -EnableNotebookLM -EnableDrawGuideline -TargetParentDir "[TargetParentDir]/"
 
 # 範例 2：連線現有的 GitHub 儲存庫 (使用者有要求時)
-powershell -ExecutionPolicy Bypass -File "[專案初始化助手目錄]/Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "專案名稱" -EnableNotebookLM -EnableDrawGuideline -GithubRepoUrl "https://github.com/dscsteven-lang/equip-maint-ai.git" -TargetParentDir "[上層目錄路徑]/"
+powershell -ExecutionPolicy Bypass -File "[TargetParentDir]/專案初始化助手/antigravity-lazy-pack/Create-AntiGravityProject.ps1" -ProjectName "專案名稱" -FolderName "專案名稱" -EnableNotebookLM -EnableDrawGuideline -GithubRepoUrl "https://github.com/dscsteven-lang/equip-maint-ai.git" -TargetParentDir "[TargetParentDir]/"
 ```
 
 ### 步驟四：成果回報與重啟提醒
