@@ -39,78 +39,40 @@
 
 ## 🚀 使用方式
 
-### 📌 第一次使用：將「專案初始化助手」註冊至專案清單
-為了讓您未來能夠直接在專案清單中點擊「專案初始化助手」進行對話建立新專案（無需每次都複製貼上 GitHub 網址），請在 clone 本倉庫後，於本目錄下開啟 PowerShell 執行以下指令進行**一鍵自我註冊**：
+### 📌 首次使用（全新電腦或首次部署） — 🛠️ 全自動建置 (最推薦)
+當您在一台全新的電腦上，尚未安裝此助手時，**您完全不需要打任何命令列指令**。請直接在 AntiGravity 的任何對話中，貼上本 GitHub 網址並輸入以下指令：
 
-```powershell
-# 解除執行限制並執行自註冊
-Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
-.\Create-AntiGravityProject.ps1 -RegisterSelf
-```
-執行後，重新整理 AntiGravity 的專案清單，您將會看到 **「專案初始化助手」** 專案！
-
----
-
-### 方式一：直接在「專案初始化助手」專案對話中建立（最推薦）
-
-當您完成上述自註冊後，您可以直接進入專案清單中的 **「專案初始化助手」** 專案，並開啟新對話。此時您不需要提供任何 GitHub 網址，直接輸入以下指令即可：
-
-```text
-建立新專案
-```
-
-**AI 將會引導您執行以下極簡流程**：
-1. 詢問您的 **專案名稱** (例如：`諸葛防禦系統`)。
-2. **確認建立路徑** (預設會自動定位為專案初始化助手資料夾的上層目錄，如 `D:\AntiGravity2\諸葛防禦系統`)。
-3. 其餘設定（NotebookLM、生圖指引）將預設直接啟用，若無特別需求，直接按 Enter 確認路徑即可在一鍵建立完成！
-
----
-
-### 方式二：手動執行 (從 GitHub 載入) — 🛠️ 全自動建置
-若您在一台全新的電腦上，尚未進行自註冊，您完全不需要手動打開 PowerShell 執行命令。您可以直接複製 GitHub 網址，並在 AntiGravity 的對話中對 AI 輸入：
 ```text
 這是我的 AntiGravity 2.0 專案初始化助手：
-https://github.com/<您的帳號>/antigravity-lazy-pack
+https://github.com/dscsteven-lang/antigravity-lazy-pack
 
 請讀取其中的 SKILL.md 技能，並協助我建立新專案。
 ```
 
 **此時 AI 會全自動在背景完成以下操作**：
-1. 自動定位您的預設專案父目錄（如 `g:\我的雲端硬碟\AntiGravity2\`）。
-2. 在背景自動建立 `專案初始化助手` 資料夾，並下載（clone）最新的懶人包元件。
-3. 自動將「建立新專案」技能註冊到這台電腦的**全域技能目錄**中，並完成助手的自註冊。
-4. **輸出引導卡片，指示您重新整理清單並前往全新的「專案初始化助手」專案中繼續進行專案建立。**
+1. **引導確認路徑**：向您確認要將「專案初始化助手」安裝在您本機的哪個父目錄下（例如 `g:\我的雲端硬碟\AntiGravity2\`）。
+2. **全自動背景建置**：自動建立資料夾、下載最新懶人包、完成全域技能註冊與自註冊。
+3. **分流引導**：完成後輸出引導卡片，指示您重新整理專案清單，切換至全新的 **「專案初始化助手」** 專案對話中。
 
 ---
 
-### 方式三：在 PowerShell 中手動執行
+### 📌 後續使用（已部署完成） — 🚀 統一從專案清單開啟
+當助手註冊完成後，為了保持對話記錄的整潔與統一管理，**未來所有新專案的建立，請統一在「專案初始化助手」專案中進行**。
 
-如果您想在終端機中手動執行建立，可以在本專案初始化助手目錄下開啟 PowerShell，並執行以下指令：
-
-```powershell
-# 解除 PowerShell 腳本執行限制並執行初始化
-Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
-
-# 執行初始化 (若要啟用 NotebookLM、GitHub CLI 或生圖指引，直接帶入對應參數即可)
-.\Create-AntiGravityProject.ps1 `
-  -ProjectName "我的新專案" `
-  -FolderName "my-new-project" `
-  -Personality "扮演一位專業的 React 前端工程師，回答力求簡潔並給出最佳實踐。" `
-  -EnableNotebookLM `
-  -EnableGitHubCLI `
-  -CreateGithubRepo `
-  -EnableDrawGuideline
+請直接進入 **「專案初始化助手」** 對話，輸入：
+```text
+建立新專案
 ```
+**AI 便會以極簡的對話引導您建置全新專案**（詢問專案名稱與確認路徑，預設建立於 `g:\我的雲端硬碟\AntiGravity2\<專案名稱>` 之下）。
 
-#### 可用參數說明：
-- `-ProjectName` (必要)：專案的中文/英文名稱。
-- `-FolderName` (必要)：建立於 `G:\我的雲端硬碟\AntiGravity2\` 底下的資料夾名稱。
-- `-Personality` (選用)：指定此專案 AI 的獨特個性。
-- `-EnableNotebookLM` (選用開關)：若加入此參數，代表啟用 NotebookLM MCP。
-- `-EnableGitHubCLI` (選用開關)：若加入此參數，代表啟用 GitHub CLI。
-- `-CreateGithubRepo` (選用開關)：若加入此參數，且本機有登入 `gh`，會自動在 GitHub 上建立同名公開儲存庫並 Push。
-- `-EnableDrawGuideline` (選用開關)：若加入此參數，代表啟用生圖與 UI 設計指引規範。
-- `-TargetParentDir` (選用)：預設為 `G:\我的雲端硬碟\AntiGravity2/`，可手動指定其他父目錄。
+---
+
+### 🔧 備用方案：手動註冊（僅在 AI 背景自動建置受限時使用）
+若您的本機環境限制了 AI 的背景指令執行，您可以手動在 clone 本儲存庫後，於本目錄下開啟 PowerShell 執行以下指令進行自我註冊：
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+.\Create-AntiGravityProject.ps1 -RegisterSelf
+```
 
 ---
 
