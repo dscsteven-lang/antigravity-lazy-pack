@@ -176,11 +176,12 @@ $GhLoggedIn = $false
 $GhUser = ""
 if (Get-Command gh -ErrorAction SilentlyContinue) {
     $GhInstalled = $true
-    $ghAuth = gh auth status 2>&1 | Out-String
-    if ($ghAuth -match "Logged in to") {
-        $GhLoggedIn = $true
-        if ($ghAuth -match "as ([^\s]+)") {
-            $GhUser = $Matches[1]
+    # 僅在啟用 GitHub 整合且需要登入狀態時，才發起網路請求檢測
+    if ($EnableGitHubCLI -or $CreateGithubRepo) {
+        $ghAuth = gh auth status 2>&1 | Out-String
+        if ($ghAuth -match "Logged in to") {
+            $GhLoggedIn = $true
+            if ($ghAuth -match "as ([^\s]+)") { $GhUser = $Matches[1] }
         }
     }
 }
@@ -189,11 +190,15 @@ $NlmInstalled = $false
 $NlmStatus = "未安裝"
 if (Get-Command nlm -ErrorAction SilentlyContinue) {
     $NlmInstalled = $true
-    $nlmDoc = nlm doctor 2>&1 | Out-String
-    if ($nlmDoc -match "successful" -or $nlmDoc -match "OK") {
-        $NlmStatus = "正常運作"
-    } else {
-        $NlmStatus = "未登入或狀態異常"
+    $NlmStatus = "已安裝"
+    # 僅在啟用 NotebookLM 且需要健康診斷時，才連網執行 doctor
+    if ($EnableNotebookLM) {
+        $nlmDoc = nlm doctor 2>&1 | Out-String
+        if ($nlmDoc -match "successful" -or $nlmDoc -match "OK") {
+            $NlmStatus = "正常運作"
+        } else {
+            $NlmStatus = "未登入或狀態異常"
+        }
     }
 }
 
