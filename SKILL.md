@@ -5,6 +5,10 @@ description: AntiGravity 2.0 新專案自動初始化工具。當使用者說「
 
 # AntiGravity 2.0 新專案自動初始化技能
 
+> [!IMPORTANT]
+> **本技能禁止啟動 Planning Mode**：
+> 本任務（新專案初始化）屬於一鍵式自動化腳本執行，**禁止為此建立任何實作計畫（如 `implementation_plan.md`）！**請直接遵循下述的「執行流程」，在對話中向使用者詢問極簡問題，並立即透過 `run_command` 呼叫腳本執行。
+
 當使用者提出要「建立新專案」或「初始化專案」時，AI Agent 應按照以下流程執行：
 
 ## 執行流程
