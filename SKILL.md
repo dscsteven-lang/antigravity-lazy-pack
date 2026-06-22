@@ -17,12 +17,25 @@ description: AntiGravity 2.0 新專案自動初始化工具。當使用者說「
 在進行任何問答或建立專案前，AI **必須先在本地執行前置檢查**，以防動到使用者目前正在發起對話的專案資料夾：
 1. **定位預設父目錄**：取得目前專案根目錄的上一層目錄作為 `TargetParentDir`（例如 `g:\我的雲端硬碟\AntiGravity2\`）。
 2. **檢查助手資料夾是否存在**：檢查 `[TargetParentDir]\專案初始化助手` 資料夾是否存在。
-3. **若不存在（首次使用）**，請**不要詢問**，直接在背景依序執行以下指令進行自動建置：
-   * 建立資料夾：`[TargetParentDir]\專案初始化助手`
-   * 下載專案資料：使用 `git clone https://github.com/dscsteven-lang/antigravity-lazy-pack.git "[TargetParentDir]\專案初始化助手\antigravity-lazy-pack"`
-   * 註冊助手自己：執行自註冊 `powershell -ExecutionPolicy Bypass -File "[TargetParentDir]\專案初始化助手\antigravity-lazy-pack\Create-AntiGravityProject.ps1" -RegisterSelf`
-   * *（註：自註冊完成後，主動提示使用者「已為您自動在本機部署並註冊了『專案初始化助手』」）*
-4. **確認使用此路徑執行後續操作**：無論是首次建立還是已存在，後續步驟呼叫的 `Create-AntiGravityProject.ps1` 腳本路徑都必須指向 `[TargetParentDir]\專案初始化助手\antigravity-lazy-pack\Create-AntiGravityProject.ps1`，絕對不能使用目前發起對話之專案內部的腳本。
+3. **若不存在（首次使用）**：
+   * 請**不要詢問使用者**，直接在背景依序執行以下指令進行自動建置：
+     * 建立資料夾：`[TargetParentDir]\專案初始化助手`
+     * 下載專案資料：使用 `git clone https://github.com/dscsteven-lang/antigravity-lazy-pack.git "[TargetParentDir]\專案初始化助手\antigravity-lazy-pack"`
+     * 註冊助手自己：執行自註冊 `powershell -ExecutionPolicy Bypass -File "[TargetParentDir]\專案初始化助手\antigravity-lazy-pack\Create-AntiGravityProject.ps1" -RegisterSelf`
+   * **⚠️ 關鍵中斷點**：完成上述指令執行後，**禁止繼續執行後續步驟（步驟一至四）**！請直接在對話中輸出以下格式的引導內容：
+     > 🛠️ **已為您自動部署與註冊「專案初始化助手」！**
+     >
+     > 為了統一管理並保留您所有專案的建立紀錄，我們已成功在您的本機安裝並註冊了「專案初始化助手」。
+     > 
+     > **請依照以下步驟繼續：**
+     > 1. 請點擊專案清單上方的 **「重新整理 (Refresh)」** 按鈕（或重新啟動 AntiGravity 2.0）。
+     > 2. 在專案清單中切換至 **「專案初始化助手」** 專案並開啟對話。
+     > 3. 在該對話中輸入 **`建立新專案`**，我們將正式開始為您建置新專案！
+     >
+     > *(為了確保您現有專案的資料夾安全與對話紀錄整潔，本對話已在此結束，不再繼續執行建立專案指令)*
+4. **若已存在（代表目前對話本就在「專案初始化助手」中）**：
+   * 請繼續執行後續的 **步驟一、二、三、四**。
+   * 後續步驟呼叫 of `Create-AntiGravityProject.ps1` 腳本路徑都必須指向 `[TargetParentDir]\專案初始化助手\antigravity-lazy-pack\Create-AntiGravityProject.ps1`。
 
 ### 步驟一：向使用者收集專案名稱與確認路徑
 請**務必嚴格依照以下格式**，以親切、專業的繁體中文向使用者詢問：
