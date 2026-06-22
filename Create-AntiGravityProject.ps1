@@ -1,4 +1,4 @@
-﻿# Create-AntiGravityProject.ps1
+# Create-AntiGravityProject.ps1
 # AntiGravity 2.0 新專案自動初始化腳本
 
 param (
@@ -131,13 +131,17 @@ if ([string]::IsNullOrEmpty($Personality)) {
     $Personality = "未設定特別個性化，請由 AI 自由發揮並依據開發歷程學習調整。"
 }
 if ([string]::IsNullOrEmpty($TargetParentDir)) {
-    # 動態以腳本所在位置（專案初始化助手資料夾）的上層目錄作為預設的 TargetParentDir
+    # 取得腳本所在的子目錄 (例如: .../懶人包助手/antigravity-lazy-pack)
     $ScriptDir = $PSScriptRoot
     if ([string]::IsNullOrEmpty($ScriptDir)) {
         $ScriptDir = Get-Location
     }
-    # 取得上層目錄路徑，將反斜線統一換為正斜線，並確保結尾有斜線
-    $ParentDir = Split-Path $ScriptDir -Parent
+    # 向上取第一層取得「專案初始化助手」的根目錄 (例如: .../懶人包助手)
+    $HelperRootDir = Split-Path $ScriptDir -Parent
+    # 向上取第二層取得新專案的預設父目錄 (例如: .../AntiGravity2)
+    $ParentDir = Split-Path $HelperRootDir -Parent
+    
+    # 確保路徑格式為正斜線，且結尾有斜線
     $TargetParentDir = ($ParentDir.Replace('\', '/')) + "/"
 }
 
