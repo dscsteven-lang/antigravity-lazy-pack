@@ -1,4 +1,4 @@
-# Create-AntiGravityProject.ps1
+﻿# Create-AntiGravityProject.ps1
 # AntiGravity 2.0 新專案自動初始化腳本
 
 param (
