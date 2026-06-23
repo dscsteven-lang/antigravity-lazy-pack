@@ -654,6 +654,23 @@ if (Test-Path $SkillSource) {
 Write-Host "成功將專案註冊至 AntiGravity 清單！設定檔: $JsonFilePath" -ForegroundColor Green
 
 # 8.7 順便將本腳本所在目錄以「專案初始化助手」註冊至專案清單（防重）
+$SelfDir = $PSScriptRoot
+if ([string]::IsNullOrEmpty($SelfDir)) {
+    $SelfDir = Get-Location
+}
+$SelfDir = [System.IO.Path]::GetFullPath($SelfDir)
+
+$UriSegments = $SelfDir.Replace('\', '/').Split('/')
+$EscapedSegments = @()
+foreach ($seg in $UriSegments) {
+    if ($seg -like "*:") {
+        $EscapedSegments += $seg.ToLower().Replace(":", "%3A")
+    } else {
+        $EscapedSegments += [System.Uri]::EscapeDataString($seg)
+    }
+}
+$SelfUri = "file:///" + ($EscapedSegments -join "/")
+
 $SelfRegisteredId = ""
 if (Test-Path $ConfigProjectsDir) {
     $files = Get-ChildItem -Path $ConfigProjectsDir -Filter "*.json"
@@ -663,8 +680,7 @@ if (Test-Path $ConfigProjectsDir) {
             $projData = $jsonContent | ConvertFrom-Json
             if ($null -ne $projData.projectResources.resources) {
                 foreach ($res in $projData.projectResources.resources) {
-                    $escapedSelfDir = $SelfDir.Replace('\', '/')
-                    if ($res.gitFolder.folderUri -match [Regex]::Escape($escapedSelfDir)) {
+                    if ($res.gitFolder.folderUri -eq $SelfUri) {
                         $SelfRegisteredId = $projData.id
                         break
                     }
@@ -677,21 +693,7 @@ if (Test-Path $ConfigProjectsDir) {
 
 if ([string]::IsNullOrEmpty($SelfRegisteredId)) {
     $SelfId = [guid]::NewGuid().ToString()
-    $SelfDir = $PSScriptRoot
-    if ([string]::IsNullOrEmpty($SelfDir)) { $SelfDir = Get-Location }
-    $SelfDir = [System.IO.Path]::GetFullPath($SelfDir)
     $SelfName = "專案初始化助手"
-
-    $UriSegments = $SelfDir.Replace('\', '/').Split('/')
-    $EscapedSegments = @()
-    foreach ($seg in $UriSegments) {
-        if ($seg -like "*:") {
-            $EscapedSegments += $seg.ToLower().Replace(":", "%3A")
-        } else {
-            $EscapedSegments += [System.Uri]::EscapeDataString($seg)
-        }
-    }
-    $SelfUri = "file:///" + ($EscapedSegments -join "/")
 
     $SelfJson = @"
 {
