@@ -22,7 +22,9 @@ param (
 
     [string]$TargetParentDir = "",
 
-    [switch]$RegisterSelf
+    [switch]$RegisterSelf,
+
+    [switch]$NoGit
 )
 
 # 處理自註冊模式 (將專案初始化助手自己註冊至專案清單)
@@ -318,6 +320,13 @@ $RepoDir = Join-Path $ProjectDir $RepoSubDirName
 
 # 偵測 Git 是否可用
 $HasGit = $GitInstalled
+if ($NoGit) {
+    if ($RequiresGit) {
+        Write-Warning "您指定了 GitHub 整合，但又傳入了 -NoGit 參數。將忽略 -NoGit，繼續啟用 Git 功能。"
+    } else {
+        $HasGit = $false
+    }
+}
 
 # 2. 建立外層本地專案目錄 (不進版控，僅作為本地工作區)
 Write-Host "正在建立外層專案工作區..." -ForegroundColor Yellow
@@ -391,21 +400,27 @@ if ($HasGit) {
         if (-not (Test-Path $RepoDir)) {
             New-Item -ItemType Directory -Path $RepoDir -Force | Out-Null
         }
-        if (-not (Test-Path (Join-Path $RepoDir ".git"))) {
-            Write-Host "正在子目錄初始化本地 Git 儲存庫..." -ForegroundColor Yellow
-            Push-Location $RepoDir
-            git init | Out-Null
-            Pop-Location
-            Write-Host "子目錄 Git 儲存庫初始化成功！" -ForegroundColor Green
-        } else {
-            Write-Host "子目錄 Git 儲存庫先前已初始化。" -ForegroundColor Yellow
+        if ($HasGit) {
+            if (-not (Test-Path (Join-Path $RepoDir ".git"))) {
+                Write-Host "正在子目錄初始化本地 Git 儲存庫..." -ForegroundColor Yellow
+                Push-Location $RepoDir
+                git init | Out-Null
+                Pop-Location
+                Write-Host "子目錄 Git 儲存庫初始化成功！" -ForegroundColor Green
+            } else {
+                Write-Host "子目錄 Git 儲存庫先前已初始化。" -ForegroundColor Yellow
+            }
         }
     }
 } else {
     if (-not (Test-Path $RepoDir)) {
         New-Item -ItemType Directory -Path $RepoDir -Force | Out-Null
     }
-    Write-Warning "未在本機找到 git 指令，跳過 Git 初始化。"
+    if ($NoGit) {
+        Write-Host "已依據 -NoGit 參數跳過 Git 初始化。" -ForegroundColor Gray
+    } else {
+        Write-Warning "未在本機找到 git 指令，跳過 Git 初始化。"
+    }
 }
 
 # 5. 複製與處理模板檔案
@@ -471,6 +486,44 @@ if (Test-Path $AgentsTemplate) {
 "@
     }
     
+    # 決定收工流程步驟
+    $ShutdownStepsText = ""
+    if ($HasGit) {
+        $ShutdownStepsText = @"
+1. **自動備份對話歷史**：
+   - 尋找當前對話紀錄檔案。主要路徑為：`<appDataDir>\brain\<conversation-id>\.system_generated\logs\transcript.jsonl`。
+   - 將該檔案複製備份至專案根目錄的 `記憶/對話歷史記憶/` 底下。
+   - 檔名格式為：`transcript_{{DATE}}_{{TIME}}_<conversation-id>.jsonl`。
+2. **自動備份長期學習與自訂規則**：
+   - 將 `.agents/AGENTS.md`（本檔案）備份至專案根目錄 of `記憶/自訂規則記憶/` 底下。
+   - 檔名格式為：`AGENTS_{{DATE}}_{{TIME}}.md`。
+3. **Git 狀態檢查與提交詢問**：
+   - ⚠️ **邊界限制**：專案根目錄下的「記憶」與「.agents」資料夾為本地個人專屬，絕不上傳版控。**你所有的 Git 操作（狀態檢查、提交、推送）都必須在子目錄 `{{REPO_SUBDIR}}` 中執行。**
+   - 進入子目錄 `{{REPO_SUBDIR}}`，執行 Git 狀態與變更檢查，排除任何敏感資訊。
+   - 向使用者報告今日子目錄中有變動的檔案，並生成建議的提交訊息。
+   - 主動詢問使用者：「是否需要執行 Git 提交與推送以儲存本次程式碼變更？」
+   - 在得到使用者明確同意後，在子目錄中執行提交與推送；若使用者拒絕或未作答，則不可自動提交。
+4. **工作成果報告**：
+   - 簡述今天完成的工作與已備份的檔案清單。
+   - 提供下次開工的建議待辦清單。
+"@
+    } else {
+        $ShutdownStepsText = @"
+1. **自動備份對話歷史**：
+   - 尋找當前對話紀錄檔案。主要路徑為：`<appDataDir>\brain\<conversation-id>\.system_generated\logs\transcript.jsonl`。
+   - 將該檔案複製備份至專案根目錄的 `記憶/對話歷史記憶/` 底下。
+   - 檔名格式為：`transcript_{{DATE}}_{{TIME}}_<conversation-id>.jsonl`。
+2. **自動備份長期學習與自訂規則**：
+   - 將 `.agents/AGENTS.md`（本檔案）備份至專案根目錄 of `記憶/自訂規則記憶/` 底下。
+   - 檔名格式為：`AGENTS_{{DATE}}_{{TIME}}.md`。
+3. **工作成果報告**：
+   - 簡述今天完成的工作與已備份的檔案清單。
+   - 提供下次開工的建議待辦清單.
+"@
+    }
+    # 取代步驟佔位符中的變數並完成寫入
+    $ShutdownStepsText = $ShutdownStepsText.Replace("{{REPO_SUBDIR}}", $RepoSubDirName)
+    $AgentsContent = $AgentsContent.Replace("{{SHUTDOWN_STEPS}}", $ShutdownStepsText)
     $AgentsContent = $AgentsContent.Replace("{{NOTEBOOKLM_STATUS}}", $NotebookLMVal)
     $AgentsContent = $AgentsContent.Replace("{{GITHUB_CLI_STATUS}}", $GithubVal)
     $AgentsContent = $AgentsContent.Replace("{{DRAW_GUIDELINE}}", $DrawGuidelineText)
