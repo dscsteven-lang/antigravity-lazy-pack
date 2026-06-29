@@ -46,6 +46,7 @@ description: AntiGravity 2.0 新專案自動初始化工具。當使用者說「
        >
        > *(為了確保您現有專案的資料夾安全與對話紀錄整潔，本對話已在此結束，不再繼續執行建立專案指令)*
 4. **若已存在（代表目前對話本就在「專案初始化助手」中）**：
+   * **自動同步最新版本**：AI 必須先嘗試在 `[TargetParentDir]\專案初始化助手\antigravity-lazy-pack` 目錄下執行 `git pull` 指令，以確保本機使用的是最新修復的初始化腳本！
    * 請繼續執行後續的 **步驟一、二、三、四**。
    * 後續步驟呼叫 of `Create-AntiGravityProject.ps1` 腳本路徑都必須指向 `[TargetParentDir]\專案初始化助手\antigravity-lazy-pack\Create-AntiGravityProject.ps1`。
 
